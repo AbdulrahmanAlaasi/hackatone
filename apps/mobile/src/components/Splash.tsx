@@ -18,26 +18,23 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-// Breathing range — blob height as a fraction of screen height
-const MIN_H = 0.42;
-const MAX_H = 0.62;
-// Arc depth — how much the top of the blob curves up
-const ARC_MIN = 60;
-const ARC_MAX = 110;
-
+const MIN_H = 0.40;
+const MAX_H = 0.58;
+const ARC_MIN = 70;
+const ARC_MAX = 120;
 const BREATH_MS = 2800;
 
 /**
- * Hackatone loading screen.
+ * Hackatone splash / loading screen.
  *
- * White background with a warm-orange blob rising from the bottom that
- * "breathes" — height + top-arc curve expand and contract on a gentle
- * ~2.8s sine loop. Tagline fades in at the top.
+ * Big "Hackatone" wordmark up top with a soft fade-in; warm-orange blob
+ * breathing in and out from the bottom (height + arc curve scale on the
+ * same shared value with sine easing).
  */
-export function Splash({ tagline = 'Loading' }: { tagline?: string }) {
+export function Splash({ tagline }: { tagline?: string }) {
   const breath = useSharedValue(0);
-  const textOpacity = useSharedValue(0);
-  const textY = useSharedValue(12);
+  const wordOpacity = useSharedValue(0);
+  const wordScale = useSharedValue(0.92);
 
   useEffect(() => {
     breath.value = withRepeat(
@@ -45,12 +42,12 @@ export function Splash({ tagline = 'Loading' }: { tagline?: string }) {
       -1,
       true,
     );
-    textOpacity.value = withDelay(150, withTiming(1, { duration: 600 }));
-    textY.value = withDelay(
-      150,
-      withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }),
+    wordOpacity.value = withDelay(120, withTiming(1, { duration: 700 }));
+    wordScale.value = withDelay(
+      120,
+      withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) }),
     );
-  }, [breath, textOpacity, textY]);
+  }, [breath, wordOpacity, wordScale]);
 
   const height = useDerivedValue(() =>
     interpolate(breath.value, [0, 1], [MIN_H, MAX_H]) * SCREEN_H,
@@ -62,15 +59,14 @@ export function Splash({ tagline = 'Loading' }: { tagline?: string }) {
     const a = arc.value;
     const topY = SCREEN_H - h;
     const arcPeakY = topY - a;
-    // Quadratic curve from bottom-left edge, peaking up over the screen center, back down to bottom-right.
     return {
       d: `M 0 ${topY} Q ${SCREEN_W / 2} ${arcPeakY} ${SCREEN_W} ${topY} L ${SCREEN_W} ${SCREEN_H} L 0 ${SCREEN_H} Z`,
     };
   });
 
-  const textStyle = useAnimatedStyle(() => ({
-    opacity: textOpacity.value,
-    transform: [{ translateY: textY.value }],
+  const wordmarkStyle = useAnimatedStyle(() => ({
+    opacity: wordOpacity.value,
+    transform: [{ scale: wordScale.value }],
   }));
 
   return (
@@ -96,15 +92,31 @@ export function Splash({ tagline = 'Loading' }: { tagline?: string }) {
         <Animated.Text
           style={[
             {
-              fontSize: 26,
-              fontWeight: '800',
+              fontSize: 52,
+              fontWeight: '900',
               color: tokens.color.text,
-              letterSpacing: -0.3,
+              letterSpacing: -1.2,
+              lineHeight: 56,
             },
-            textStyle,
+            wordmarkStyle,
           ]}
         >
-          {tagline}
+          Hackatone
+        </Animated.Text>
+        <Animated.Text
+          style={[
+            {
+              marginTop: 10,
+              fontSize: 14,
+              fontWeight: '700',
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              color: tokens.color.primaryPressed,
+            },
+            wordmarkStyle,
+          ]}
+        >
+          {tagline ?? 'Hackathons, made warm'}
         </Animated.Text>
       </View>
     </View>
