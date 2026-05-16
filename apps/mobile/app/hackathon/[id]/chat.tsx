@@ -66,7 +66,17 @@ export default function ChatScreen() {
         ? await query.or(orFilters.join(','))
         : await query.eq('scope', 'team').eq('team_id', teamId ?? '00000000-0000-0000-0000-000000000000');
 
-      const list = (data ?? []) as Channel[];
+      // Dedupe: at most one channel per (scope, team_id) — guards against any
+      // stale dupes from before migration 0009 was applied.
+      const rawList = (data ?? []) as Array<Channel & { team_id: string | null }>;
+      const seen = new Set<string>();
+      const list: Channel[] = [];
+      for (const c of rawList) {
+        const key = `${c.scope}:${c.team_id ?? 'all'}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push({ id: c.id, name: c.name, scope: c.scope });
+      }
       setChannels(list);
       const first = list[0];
       if (first && !activeId) setActiveId(first.id);

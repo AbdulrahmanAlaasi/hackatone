@@ -253,13 +253,22 @@ insert into public.announcements (hackathon_id, title, body, created_by) values
   ('44444444-4444-4444-4444-444444444401','Welcome to Hackatone Spring Demo!','Check-in opens at 9am. Coffee and snacks in the main hall.','11111111-1111-1111-1111-111111111102'),
   ('44444444-4444-4444-4444-444444444401','Submission deadline reminder','Submissions close in 6 hours. Don''t forget your video link.','11111111-1111-1111-1111-111111111102');
 
+-- Team chat channels are auto-created by the trigger in migration 0007.
+-- Only insert the hackathon-wide General channel here.
 insert into public.chat_channels (id, hackathon_id, team_id, scope, name) values
-  ('99999999-9999-9999-9999-999999999901','44444444-4444-4444-4444-444444444401','77777777-7777-7777-7777-777777777701','team','Team Aurora'),
-  ('99999999-9999-9999-9999-999999999902','44444444-4444-4444-4444-444444444401','77777777-7777-7777-7777-777777777702','team','Team Borealis'),
-  ('99999999-9999-9999-9999-999999999910','44444444-4444-4444-4444-444444444401', null,                                       'hackathon','General')
+  ('99999999-9999-9999-9999-999999999910','44444444-4444-4444-4444-444444444401', null, 'hackathon','General')
 on conflict (id) do nothing;
 
+-- Seed messages: reference the auto-created Team Aurora channel by team_id.
+insert into public.chat_messages (channel_id, hackathon_id, sender_id, body)
+select c.id, '44444444-4444-4444-4444-444444444401', '22222222-2222-2222-2222-222222222201', 'Kickoff in 10 minutes!'
+  from public.chat_channels c
+ where c.team_id = '77777777-7777-7777-7777-777777777701' and c.scope = 'team';
+
+insert into public.chat_messages (channel_id, hackathon_id, sender_id, body)
+select c.id, '44444444-4444-4444-4444-444444444401', '22222222-2222-2222-2222-222222222202', 'I''ll handle the API.'
+  from public.chat_channels c
+ where c.team_id = '77777777-7777-7777-7777-777777777701' and c.scope = 'team';
+
 insert into public.chat_messages (channel_id, hackathon_id, sender_id, body) values
-  ('99999999-9999-9999-9999-999999999901','44444444-4444-4444-4444-444444444401','22222222-2222-2222-2222-222222222201','Kickoff in 10 minutes!'),
-  ('99999999-9999-9999-9999-999999999901','44444444-4444-4444-4444-444444444401','22222222-2222-2222-2222-222222222202','I''ll handle the API.'),
   ('99999999-9999-9999-9999-999999999910','44444444-4444-4444-4444-444444444401','11111111-1111-1111-1111-111111111102','Welcome everyone — good luck!');
