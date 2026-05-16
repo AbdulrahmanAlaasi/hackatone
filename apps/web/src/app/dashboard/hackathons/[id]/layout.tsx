@@ -1,0 +1,53 @@
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { Badge, Container, TopHeader } from '@/components/ui';
+import { getCurrentUserOrRedirect } from '@/lib/auth';
+import styles from './layout.module.css';
+
+const TABS = [
+  { href: '', label: 'Overview' },
+  { href: '/participants', label: 'Participants' },
+  { href: '/tracks', label: 'Tracks' },
+  { href: '/criteria', label: 'Judging criteria' },
+  { href: '/qr-codes', label: 'QR & registration' },
+];
+
+export default async function HackathonLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: { id: string };
+}) {
+  const { supabase } = await getCurrentUserOrRedirect();
+  const { data: hackathon } = await supabase
+    .from('hackathons')
+    .select('id, title, slug, status, starts_at, ends_at')
+    .eq('id', params.id)
+    .maybeSingle();
+
+  if (!hackathon) notFound();
+
+  return (
+    <Container>
+      <TopHeader
+        title={hackathon.title}
+        subtitle={
+          <>
+            <code>/{hackathon.slug}</code> ·{' '}
+            {hackathon.starts_at ? new Date(hackathon.starts_at).toLocaleDateString() : 'no start date'}
+          </>
+        }
+        actions={<Badge tone="info">{hackathon.status}</Badge>}
+      />
+      <nav className={styles.tabs}>
+        {TABS.map((t) => (
+          <Link key={t.href} href={`/dashboard/hackathons/${params.id}${t.href}`} className={styles.tab}>
+            {t.label}
+          </Link>
+        ))}
+      </nav>
+      <div style={{ marginTop: 'var(--space-6)' }}>{children}</div>
+    </Container>
+  );
+}

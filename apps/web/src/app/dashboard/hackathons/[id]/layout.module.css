@@ -1,0 +1,19 @@
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.tab {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-label);
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.tab:hover { background: var(--color-surface-soft); }
