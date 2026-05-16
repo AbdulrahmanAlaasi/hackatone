@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, Button, Card, H1, H2, Muted, P, Screen } from '../../src/components/ui';
-import { supabase } from '../../src/lib/supabase';
-import { useAuth } from '../../src/auth/AuthProvider';
-import { tokens } from '../../src/theme';
+import { Badge, Button, Card, H1, H2, Muted, P, Screen } from '../../../src/components/ui';
+import { supabase } from '../../../src/lib/supabase';
+import { useAuth } from '../../../src/auth/AuthProvider';
+import { tokens } from '../../../src/theme';
 
 const TONES: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
   accepted: 'success',
