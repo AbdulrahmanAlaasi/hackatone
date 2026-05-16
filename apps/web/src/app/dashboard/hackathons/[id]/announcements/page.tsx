@@ -12,7 +12,7 @@ export default async function AnnouncementsPage({
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: announcements } = await supabase
     .from('announcements')
-    .select('id, title, body, created_at, hidden')
+    .select('*')
     .eq('hackathon_id', id)
     .order('created_at', { ascending: false });
 

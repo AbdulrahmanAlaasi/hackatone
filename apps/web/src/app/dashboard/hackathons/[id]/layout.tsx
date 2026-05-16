@@ -51,16 +51,34 @@ export default async function HackathonLayout({
 }) {
   const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
-  const { data: raw } = await supabase
+  // `select('*')` is tolerant if migration 0010 hasn't been applied yet —
+  // missing columns just come back undefined instead of failing the query.
+  const { data: raw, error } = await supabase
     .from('hackathons')
-    .select('id, title, slug, status, starts_at, ends_at, location, field, visibility, organizations(name, logo_url)')
+    .select('*, organizations(name, logo_url)')
     .eq('id', id)
     .maybeSingle();
 
+  if (error) {
+    // Don't 404 on a real DB error — show a friendly message so the user knows what to do.
+    return (
+      <Container>
+        <div style={{ padding: '64px 0' }}>
+          <h1 style={{ margin: 0 }}>Couldn&apos;t load hackathon</h1>
+          <p style={{ color: 'var(--color-text-muted)' }}>{error.message}</p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-caption)' }}>
+            If you just ran migration 0010, also run{' '}
+            <code>notify pgrst, &apos;reload schema&apos;;</code> in the Supabase SQL editor to
+            refresh the schema cache.
+          </p>
+        </div>
+      </Container>
+    );
+  }
   if (!raw) notFound();
 
   // Supabase's generated types don't yet include the columns added in migration 0010,
-  // so we cast here. Safe — we know the shape from the select above.
+  // so we cast here. All new columns are optional — gracefully degrades if migration not run.
   const hackathon = raw as unknown as {
     id: string;
     title: string;
@@ -69,11 +87,13 @@ export default async function HackathonLayout({
     starts_at: string | null;
     ends_at: string | null;
     location: string | null;
-    field: string | null;
-    visibility: 'public' | 'private';
+    field?: string | null;
+    visibility?: 'public' | 'private';
     organizations: { name: string; logo_url: string | null } | null;
   };
   const org = hackathon.organizations;
+  const visibility = hackathon.visibility ?? 'private';
+  const field = hackathon.field ?? null;
 
   return (
     <>
@@ -94,10 +114,10 @@ export default async function HackathonLayout({
           <Display>{hackathon.title}</Display>
           <div className={styles.heroMeta}>
             <Badge tone={hackathon.status === 'active' ? 'success' : 'info'}>{hackathon.status}</Badge>
-            <Badge tone={hackathon.visibility === 'public' ? 'success' : 'neutral'}>
-              {hackathon.visibility === 'public' ? 'Public' : 'Private'}
+            <Badge tone={visibility === 'public' ? 'success' : 'neutral'}>
+              {visibility === 'public' ? 'Public' : 'Private'}
             </Badge>
-            {hackathon.field ? <Badge tone="cream">{hackathon.field}</Badge> : null}
+            {field ? <Badge tone="cream">{field}</Badge> : null}
             {hackathon.location ? (
               <span className={styles.metaChip}>
                 <Icon.Pin size={14} /> {hackathon.location}

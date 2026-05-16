@@ -39,6 +39,14 @@ export default async function DashboardOverviewPage() {
     .eq('id', user!.id)
     .maybeSingle();
 
+  const { data: membership } = await supabase
+    .from('organization_members')
+    .select('organizations(id, name, logo_url)')
+    .eq('user_id', user!.id)
+    .limit(1)
+    .maybeSingle();
+  const org = (membership?.organizations as unknown as { id: string; name: string; logo_url: string | null } | null) ?? null;
+
   const { data: hackathons } = await supabase
     .from('hackathons')
     .select('id, title, slug, status, starts_at')
@@ -69,24 +77,74 @@ export default async function DashboardOverviewPage() {
           borderRadius: 32,
           padding: 'var(--space-8)',
           marginTop: 'var(--space-6)',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) auto',
+          gap: 'var(--space-6)',
+          alignItems: 'center',
         }}
       >
-        <Eyebrow light>{greeting()}</Eyebrow>
-        <Display light>
-          {name}, here&apos;s your overview.
-        </Display>
-        <p style={{ color: 'rgba(255,255,255,0.95)', maxWidth: 540, marginTop: 16 }}>
-          {(hackathons?.length ?? 0) > 0
-            ? `You're running ${hackathons!.length} hackathon${hackathons!.length === 1 ? '' : 's'}.`
-            : 'No hackathons yet. Spin one up to get rolling.'}
-        </p>
-        <div style={{ marginTop: 'var(--space-5)' }}>
-          <Link href="/dashboard/hackathons/new">
-            <Button style={{ background: '#fff', color: 'var(--color-primary-pressed)' }}>
-              + New hackathon
-            </Button>
-          </Link>
+        <div style={{ minWidth: 0 }}>
+          <Eyebrow light>{greeting()}</Eyebrow>
+          <Display light>
+            {name}, here&apos;s your overview.
+          </Display>
+          <p style={{ color: 'rgba(255,255,255,0.95)', maxWidth: 540, marginTop: 16 }}>
+            {(hackathons?.length ?? 0) > 0
+              ? `You're running ${hackathons!.length} hackathon${hackathons!.length === 1 ? '' : 's'}.`
+              : 'No hackathons yet. Spin one up to get rolling.'}
+          </p>
+          <div style={{ marginTop: 'var(--space-5)' }}>
+            <Link href="/dashboard/hackathons/new">
+              <Button style={{ background: '#fff', color: 'var(--color-primary-pressed)' }}>
+                + New hackathon
+              </Button>
+            </Link>
+          </div>
         </div>
+
+        {/* Org logo / fallback monogram */}
+        {org ? (
+          <Link
+            href="/dashboard/settings"
+            aria-label={`${org.name} — edit logo in settings`}
+            style={{ display: 'block', textDecoration: 'none' }}
+          >
+            {org.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={org.logo_url}
+                alt={org.name}
+                style={{
+                  width: 112,
+                  height: 112,
+                  borderRadius: 28,
+                  objectFit: 'cover',
+                  background: '#fff',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 112,
+                  height: 112,
+                  borderRadius: 28,
+                  background: 'rgba(255,255,255,0.22)',
+                  color: '#fff',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: 44,
+                  fontWeight: 900,
+                  border: '2px dashed rgba(255,255,255,0.5)',
+                  textAlign: 'center',
+                }}
+                title="Add a logo in Settings"
+              >
+                {org.name.slice(0, 1)}
+              </div>
+            )}
+          </Link>
+        ) : null}
       </section>
 
       <section
