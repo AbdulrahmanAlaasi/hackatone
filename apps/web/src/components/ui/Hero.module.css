@@ -1,0 +1,58 @@
+.hero {
+  border-bottom-left-radius: 48px;
+  border-bottom-right-radius: 48px;
+  padding: 48px 0 64px;
+  overflow: hidden;
+  position: relative;
+}
+
+.inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .hero { padding: 80px 0 96px; }
+  .inner { padding: 0 var(--space-8); }
+}
+
+.tone_sunrise {
+  background: linear-gradient(135deg, #FFB066 0%, #FF8A3D 50%, #F26F23 100%);
+  color: #fff;
+}
+.tone_peach {
+  background: linear-gradient(135deg, #FFE5CC 0%, #FFB689 100%);
+  color: var(--color-text);
+}
+.tone_cream {
+  background: linear-gradient(135deg, #FFF8EF 0%, #FFE2BD 100%);
+  color: var(--color-text);
+}
+.tone_sky {
+  background: linear-gradient(135deg, #DDEEFF 0%, #A9D5FA 100%);
+  color: var(--color-text);
+}
+.tone_mint {
+  background: linear-gradient(135deg, #D8F3E5 0%, #9BDDB8 100%);
+  color: var(--color-text);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-label);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary-pressed);
+}
+.eyebrowLight { color: rgba(255, 255, 255, 0.88); }
+
+.display {
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+}
+.displayLight { color: #fff; }

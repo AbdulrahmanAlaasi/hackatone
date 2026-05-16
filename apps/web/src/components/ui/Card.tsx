@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import styles from './Card.module.css';
 import { cn } from '@/lib/cn';
 
-type Tone = 'surface' | 'soft' | 'info';
+type Tone = 'surface' | 'soft' | 'info' | 'cream' | 'mint' | 'sky' | 'peach';
 
 export function Card({
   tone = 'surface',

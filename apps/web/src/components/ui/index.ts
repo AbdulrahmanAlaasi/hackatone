@@ -6,3 +6,5 @@ export * from './TopHeader';
 export * from './SearchBar';
 export * from './Table';
 export * from './Container';
+export * from './Hero';
+export * from './ActionTile';

@@ -1,3 +1,28 @@
+.hero {
+  background: linear-gradient(135deg, #FFE5CC 0%, #FFB689 100%);
+  padding: 48px 0 56px;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+  margin-bottom: var(--space-6);
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-4);
+}
+
+.slug {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .tabs {
   display: flex;
   gap: var(--space-2);

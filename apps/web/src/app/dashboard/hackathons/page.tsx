@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Button, EmptyState, Table, Tbody, Td, Th, Thead, TopHeader, Tr } from '@/components/ui';
+import { Button, Container, EmptyState, Table, Tbody, Td, Th, Thead, TopHeader, Tr } from '@/components/ui';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 // Full CRUD lands in Prompt 4. This shell renders the list view.
@@ -11,7 +11,7 @@ export default async function HackathonsListPage() {
     .order('created_at', { ascending: false });
 
   return (
-    <>
+    <Container>
       <TopHeader
         title="Hackathons"
         subtitle="Create and manage your organization's events."
@@ -50,6 +50,6 @@ export default async function HackathonsListPage() {
           </Tbody>
         </Table>
       )}
-    </>
+    </Container>
   );
 }

@@ -1,11 +1,42 @@
-import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { Card, CardBody, CardTitle, StatCard, TopHeader } from '@/components/ui';
 import Link from 'next/link';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardTitle,
+  Container,
+  Display,
+  Eyebrow,
+  StatCard,
+} from '@/components/ui';
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function firstName(email: string | undefined, fullName: string | null | undefined) {
+  if (fullName) return fullName.split(' ')[0];
+  if (!email) return 'there';
+  return email.split('@')[0].split('.')[0].replace(/^\w/, (c) => c.toUpperCase());
+}
 
 export default async function DashboardOverviewPage() {
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Note: hackathons RLS restricts to org members, so users with no org see nothing.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user!.id)
+    .maybeSingle();
+
   const { data: hackathons } = await supabase
     .from('hackathons')
     .select('id, title, slug, status, starts_at')
@@ -24,15 +55,41 @@ export default async function DashboardOverviewPage() {
     { registrations: 0, accepted: 0, checkedIn: 0, submissions: 0 },
   );
 
+  const name = firstName(user?.email, profile?.full_name);
+
   return (
-    <>
-      <TopHeader
-        title="Overview"
-        subtitle="Your hackathons at a glance."
-      />
+    <Container>
+      {/* Warm hero — sits inside the dashboard shell */}
+      <section
+        style={{
+          background: 'linear-gradient(135deg, #FFB066 0%, #FF8A3D 50%, #F26F23 100%)',
+          color: '#fff',
+          borderRadius: 32,
+          padding: 'var(--space-8)',
+          marginTop: 'var(--space-6)',
+        }}
+      >
+        <Eyebrow light>{greeting()}</Eyebrow>
+        <Display light>
+          {name}, here&apos;s your overview.
+        </Display>
+        <p style={{ color: 'rgba(255,255,255,0.95)', maxWidth: 540, marginTop: 16 }}>
+          {(hackathons?.length ?? 0) > 0
+            ? `You're running ${hackathons!.length} hackathon${hackathons!.length === 1 ? '' : 's'}.`
+            : 'No hackathons yet. Spin one up to get rolling.'}
+        </p>
+        <div style={{ marginTop: 'var(--space-5)' }}>
+          <Link href="/dashboard/hackathons/new">
+            <Button style={{ background: '#fff', color: 'var(--color-primary-pressed)' }}>
+              + New hackathon
+            </Button>
+          </Link>
+        </div>
+      </section>
 
       <section
         style={{
+          marginTop: 'var(--space-8)',
           display: 'grid',
           gap: 'var(--space-4)',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -49,10 +106,10 @@ export default async function DashboardOverviewPage() {
           Recent hackathons
         </h2>
         {(hackathons?.length ?? 0) === 0 ? (
-          <Card>
+          <Card tone="cream">
             <CardTitle>No hackathons yet</CardTitle>
             <CardBody style={{ marginTop: 'var(--space-3)' }}>
-              <Link href="/dashboard/hackathons">Create your first hackathon →</Link>
+              <Link href="/dashboard/hackathons/new">Create your first hackathon →</Link>
             </CardBody>
           </Card>
         ) : (
@@ -64,18 +121,46 @@ export default async function DashboardOverviewPage() {
             }}
           >
             {hackathons!.map((h) => (
-              <Card key={h.id}>
-                <CardTitle>{h.title}</CardTitle>
-                <CardBody style={{ marginTop: 'var(--space-2)' }}>
-                  {h.status} · {h.starts_at ? new Date(h.starts_at).toLocaleDateString() : 'no date'}
-                  <br />
-                  <Link href={`/dashboard/hackathons/${h.id}`}>Open →</Link>
-                </CardBody>
-              </Card>
+              <Link
+                key={h.id}
+                href={`/dashboard/hackathons/${h.id}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <Card style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 16,
+                      background: 'var(--color-surface-soft)',
+                      display: 'grid',
+                      placeItems: 'center',
+                      fontSize: 24,
+                      flexShrink: 0,
+                    }}
+                    aria-hidden
+                  >
+                    🚀
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <CardTitle>{h.title}</CardTitle>
+                    <p
+                      style={{
+                        margin: '6px 0 8px',
+                        color: 'var(--color-text-muted)',
+                        fontSize: 'var(--font-size-caption)',
+                      }}
+                    >
+                      {h.starts_at ? new Date(h.starts_at).toLocaleDateString() : 'no start date'}
+                    </p>
+                    <Badge tone={h.status === 'active' ? 'success' : 'info'}>{h.status}</Badge>
+                  </div>
+                </Card>
+              </Link>
             ))}
           </div>
         )}
       </section>
-    </>
+    </Container>
   );
 }

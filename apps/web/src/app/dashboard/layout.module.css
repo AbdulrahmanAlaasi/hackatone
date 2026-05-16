@@ -24,10 +24,15 @@
 }
 
 .brand {
-  font-size: var(--font-size-h3);
+  font-size: 22px;
   font-weight: 800;
   color: var(--color-primary-pressed);
   text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.brand::before {
+  content: '☀';
+  margin-right: 6px;
 }
 
 .nav {
@@ -61,5 +66,6 @@
 .userEmail { margin: 0; font-size: var(--font-size-caption); color: var(--color-text-muted); }
 
 .main {
-  padding: 0 var(--space-6) var(--space-8);
+  padding: 0 0 var(--space-8);
+  min-width: 0;
 }

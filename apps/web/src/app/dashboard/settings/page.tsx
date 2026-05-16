@@ -1,4 +1,4 @@
-import { Card, CardBody, CardTitle, TopHeader } from '@/components/ui';
+import { Card, CardBody, CardTitle, Container, TopHeader } from '@/components/ui';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function SettingsPage() {
@@ -17,7 +17,7 @@ export default async function SettingsPage() {
     .eq('user_id', user!.id);
 
   return (
-    <>
+    <Container>
       <TopHeader title="Settings" subtitle="Profile and organization membership." />
       <div
         style={{
@@ -53,6 +53,6 @@ export default async function SettingsPage() {
           </CardBody>
         </Card>
       </div>
-    </>
+    </Container>
   );
 }
