@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: 'Run hackathons end-to-end: registration, check-in, teams, submissions, judging.',
 };
 
+export const runtime = 'edge';
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
