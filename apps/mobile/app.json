@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Hackatone",
+    "slug": "hackatone",
+    "scheme": "hackatone",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "ios": { "supportsTablet": true, "bundleIdentifier": "dev.alaasi.hackatone" },
+    "android": { "package": "dev.alaasi.hackatone" },
+    "web": { "bundler": "metro" },
+    "plugins": ["expo-router"],
+    "extra": {
+      "supabaseUrl": "",
+      "supabaseAnonKey": ""
+    }
+  }
+}

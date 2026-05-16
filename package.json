@@ -1,0 +1,25 @@
+{
+  "name": "hackatone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hackatone — hackathon management platform (web dashboard + mobile participant app).",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:mobile": "npm run start --workspace apps/mobile",
+    "build:web": "npm run build --workspace apps/web",
+    "build:shared": "npm run build --workspace packages/shared",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

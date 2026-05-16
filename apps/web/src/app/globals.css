@@ -1,0 +1,109 @@
+:root {
+  /* Colors */
+  --color-primary: #ff8a3d;
+  --color-primary-pressed: #e96f26;
+  --color-secondary: #ffd166;
+  --color-background: #fff8ef;
+  --color-surface: #ffffff;
+  --color-surface-soft: #ffe8d6;
+  --color-text: #2b2b2b;
+  --color-text-muted: #77716a;
+  --color-success: #7bcfa6;
+  --color-success-text: #226b49;
+  --color-warning: #ffb199;
+  --color-warning-text: #9b3d20;
+  --color-info: #cfe8ff;
+  --color-border: #e8ded4;
+  --color-disabled: #ede7df;
+  --color-disabled-text: #aaa199;
+  --color-focus: #ff8a3d;
+
+  /* Typography */
+  --font-family-base: 'Nunito Sans', 'Manrope', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-size-display: 32px;
+  --font-size-h1: 28px;
+  --font-size-h2: 22px;
+  --font-size-h3: 18px;
+  --font-size-body-lg: 17px;
+  --font-size-body: 15px;
+  --font-size-label: 13px;
+  --font-size-caption: 12px;
+  --font-size-tiny: 11px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Radii */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(43, 43, 43, 0.06);
+  --shadow-sm: 0 4px 12px rgba(43, 43, 43, 0.08);
+  --shadow-md: 0 10px 28px rgba(43, 43, 43, 0.1);
+  --shadow-lg: 0 18px 48px rgba(43, 43, 43, 0.12);
+
+  /* Layout */
+  --container-max: 1120px;
+  --form-max: 720px;
+  --detail-max: 920px;
+  --tap-target-min: 44px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --font-size-display: 44px;
+    --font-size-h1: 36px;
+    --font-size-h2: 28px;
+    --font-size-h3: 22px;
+    --font-size-body-lg: 18px;
+    --font-size-body: 16px;
+    --font-size-label: 14px;
+    --font-size-caption: 13px;
+    --font-size-tiny: 12px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
