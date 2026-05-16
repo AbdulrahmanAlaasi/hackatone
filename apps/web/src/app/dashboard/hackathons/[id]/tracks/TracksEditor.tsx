@@ -17,15 +17,17 @@ export function TracksEditor({ hackathonId }: { hackathonId: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        start(async () => {
-          const res = await addTrack(hackathonId, name, description);
-          if (!res.ok) {
-            setError(res.error);
-            return;
-          }
-          setName('');
-          setDescription('');
-          router.refresh();
+        start(() => {
+          void (async () => {
+            const res = await addTrack(hackathonId, name, description);
+            if (!res.ok) {
+              setError(res.error);
+              return;
+            }
+            setName('');
+            setDescription('');
+            router.refresh();
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-3)', marginTop: 'var(--space-3)', gridTemplateColumns: '1fr 2fr auto', alignItems: 'end' }}
@@ -50,9 +52,11 @@ export function DeleteTrackButton({ hackathonId, trackId }: { hackathonId: strin
       variant="text"
       loading={pending}
       onClick={() =>
-        start(async () => {
-          await deleteTrack(hackathonId, trackId);
-          router.refresh();
+        start(() => {
+          void (async () => {
+            await deleteTrack(hackathonId, trackId);
+            router.refresh();
+          })();
         })
       }
     >

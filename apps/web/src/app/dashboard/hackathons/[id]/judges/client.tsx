@@ -16,14 +16,16 @@ export function AssignJudgeForm({ hackathonId }: { hackathonId: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        start(async () => {
-          const res = await assignJudge(hackathonId, email);
-          if (!res.ok) {
-            setError(res.error);
-            return;
-          }
-          setEmail('');
-          router.refresh();
+        start(() => {
+          void (async () => {
+            const res = await assignJudge(hackathonId, email);
+            if (!res.ok) {
+              setError(res.error);
+              return;
+            }
+            setEmail('');
+            router.refresh();
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-3)', gridTemplateColumns: '2fr auto', alignItems: 'end', marginTop: 'var(--space-3)' }}
@@ -45,9 +47,11 @@ export function RemoveJudgeButton({ hackathonId, assignmentId }: { hackathonId: 
       variant="text"
       loading={pending}
       onClick={() =>
-        start(async () => {
-          await removeJudge(hackathonId, assignmentId);
-          router.refresh();
+        start(() => {
+          void (async () => {
+            await removeJudge(hackathonId, assignmentId);
+            router.refresh();
+          })();
         })
       }
     >

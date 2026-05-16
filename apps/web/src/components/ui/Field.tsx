@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { ReactNode } from 'react';
 import styles from './Field.module.css';
 import { cn } from '@/lib/cn';
 
@@ -12,7 +13,7 @@ export function Field({
   label: string;
   hint?: string;
   error?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   htmlFor?: string;
 }) {
   return (

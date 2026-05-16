@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { ReactNode } from 'react';
 
 type Size = 'default' | 'form' | 'detail';
 
@@ -13,7 +14,7 @@ export function Container({
   children,
 }: {
   size?: Size;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div

@@ -109,7 +109,7 @@ export default function TeamScreen() {
             <Card>
               <H2>{team.name}</H2>
               {team.join_code ? (
-                <Badge tone="secondary" style={{ marginTop: tokens.space[2] }}>
+                <Badge tone="info" style={{ marginTop: tokens.space[2] }}>
                   Join code: {team.join_code}
                 </Badge>
               ) : null}

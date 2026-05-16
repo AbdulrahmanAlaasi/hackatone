@@ -24,11 +24,13 @@ export function PublishButton({
       <Button
         loading={pending}
         onClick={() =>
-          start(async () => {
-            setMsg(null);
-            const res = await recomputeAndPublish(hackathonId);
-            setMsg(res.ok ? `Recomputed and published (${res.count} entries).` : res.error);
-            router.refresh();
+          start(() => {
+            void (async () => {
+              setMsg(null);
+              const res = await recomputeAndPublish(hackathonId);
+              setMsg(res.ok ? `Recomputed and published (${res.count} entries).` : res.error);
+              router.refresh();
+            })();
           })
         }
       >
@@ -40,10 +42,12 @@ export function PublishButton({
             variant="secondary"
             loading={pending}
             onClick={() =>
-              start(async () => {
-                await unpublish(hackathonId);
-                setMsg('Leaderboard unpublished.');
-                router.refresh();
+              start(() => {
+                void (async () => {
+                  await unpublish(hackathonId);
+                  setMsg('Leaderboard unpublished.');
+                  router.refresh();
+                })();
               })
             }
           >

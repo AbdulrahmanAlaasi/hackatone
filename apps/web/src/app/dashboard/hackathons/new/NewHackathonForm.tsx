@@ -35,28 +35,30 @@ export function NewHackathonForm({ organizationId }: { organizationId: string })
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        start(async () => {
-          const res = await createHackathon({
-            organization_id: organizationId,
-            title,
-            slug: slug || toSlug(title),
-            description,
-            location,
-            starts_at: startsAt || null,
-            ends_at: endsAt || null,
-            registration_deadline: registrationDeadline || null,
-            submission_deadline: submissionDeadline || null,
-            min_team_size: minTeamSize,
-            max_team_size: maxTeamSize,
-            team_mode: teamMode,
-            solo_allowed: soloAllowed,
-          });
-          if (!res.ok) {
-            setError(res.error);
-            return;
-          }
-          router.push(`/dashboard/hackathons/${res.id}`);
-          router.refresh();
+        start(() => {
+          void (async () => {
+            const res = await createHackathon({
+              organization_id: organizationId,
+              title,
+              slug: slug || toSlug(title),
+              description,
+              location,
+              starts_at: startsAt || null,
+              ends_at: endsAt || null,
+              registration_deadline: registrationDeadline || null,
+              submission_deadline: submissionDeadline || null,
+              min_team_size: minTeamSize,
+              max_team_size: maxTeamSize,
+              team_mode: teamMode,
+              solo_allowed: soloAllowed,
+            });
+            if (!res.ok) {
+              setError(res.error);
+              return;
+            }
+            router.push(`/dashboard/hackathons/${res.id}`);
+            router.refresh();
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-4)' }}
@@ -135,7 +137,7 @@ export function NewHackathonForm({ organizationId }: { organizationId: string })
         </Button>
       </div>
       <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-muted)', margin: 0 }}>
-        We'll seed the 5 default judging criteria automatically. Edit them on the next page.
+        We&apos;ll seed the 5 default judging criteria automatically. Edit them on the next page.
       </p>
     </form>
   );

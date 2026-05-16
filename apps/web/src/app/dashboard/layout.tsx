@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SignOutButton } from './SignOutButton';
 import styles from './layout.module.css';
@@ -10,7 +11,7 @@ const NAV = [
   { href: '/dashboard/settings', label: 'Settings' },
 ];
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = createSupabaseServerClient();
   const {
     data: { user },

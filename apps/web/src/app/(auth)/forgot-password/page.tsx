@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     <Card>
       <h1 style={{ margin: 0, fontSize: 'var(--font-size-h1)', fontWeight: 800 }}>Reset password</h1>
       <p style={{ color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
-        We'll email you a secure link to set a new password.
+        We&apos;ll email you a secure link to set a new password.
       </p>
       {sent ? (
         <p

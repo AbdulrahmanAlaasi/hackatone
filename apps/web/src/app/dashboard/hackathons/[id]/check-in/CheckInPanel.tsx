@@ -24,18 +24,20 @@ export function TokenForm({ hackathonId }: { hackathonId: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         setMsg(null);
-        start(async () => {
-          const res = await checkInByToken(hackathonId, token);
-          if (!res.ok) {
-            setMsg({ kind: 'err', text: res.error });
-            return;
-          }
-          setMsg({
-            kind: 'ok',
-            text: res.alreadyCheckedIn ? `${res.name} was already checked in.` : `Checked in ${res.name}.`,
-          });
-          setToken('');
-          router.refresh();
+        start(() => {
+          void (async () => {
+            const res = await checkInByToken(hackathonId, token);
+            if (!res.ok) {
+              setMsg({ kind: 'err', text: res.error });
+              return;
+            }
+            setMsg({
+              kind: 'ok',
+              text: res.alreadyCheckedIn ? `${res.name} was already checked in.` : `Checked in ${res.name}.`,
+            });
+            setToken('');
+            router.refresh();
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}
@@ -91,10 +93,12 @@ export function ManualList({ hackathonId, accepted }: { hackathonId: string; acc
 
   function act(fn: () => Promise<unknown>, id: string) {
     setPendingId(id);
-    start(async () => {
-      await fn();
-      setPendingId(null);
-      router.refresh();
+    start(() => {
+      void (async () => {
+        await fn();
+        setPendingId(null);
+        router.refresh();
+      })();
     });
   }
 
@@ -152,4 +156,3 @@ export function ManualList({ hackathonId, accepted }: { hackathonId: string; acc
     </div>
   );
 }
-

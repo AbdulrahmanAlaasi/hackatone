@@ -17,15 +17,17 @@ export function AnnouncementForm({ hackathonId }: { hackathonId: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        start(async () => {
-          const res = await createAnnouncement(hackathonId, title, body);
-          if (!res.ok) {
-            setError(res.error);
-            return;
-          }
-          setTitle('');
-          setBody('');
-          router.refresh();
+        start(() => {
+          void (async () => {
+            const res = await createAnnouncement(hackathonId, title, body);
+            if (!res.ok) {
+              setError(res.error);
+              return;
+            }
+            setTitle('');
+            setBody('');
+            router.refresh();
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}

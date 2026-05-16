@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Badge, Container, TopHeader } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import styles from './layout.module.css';
@@ -22,7 +23,7 @@ export default async function HackathonLayout({
   children,
   params,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   params: { id: string };
 }) {
   const { supabase } = await getCurrentUserOrRedirect();

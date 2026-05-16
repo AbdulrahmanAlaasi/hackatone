@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { ReactNode } from 'react';
 import styles from './Card.module.css';
 import { cn } from '@/lib/cn';
 
@@ -30,7 +31,7 @@ export function StatCard({
   hint,
 }: {
   label: string;
-  value: React.ReactNode;
+  value: ReactNode;
   hint?: string;
 }) {
   return (

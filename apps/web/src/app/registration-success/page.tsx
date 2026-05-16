@@ -10,7 +10,7 @@ export default function RegistrationSuccessPage({
       <Container size="form">
         <Card tone="soft">
           <h1 style={{ marginTop: 0, fontSize: 'var(--font-size-h1)', fontWeight: 800 }}>
-            You're registered 🎉
+            You&apos;re registered 🎉
           </h1>
           <p style={{ color: 'var(--color-text)', fontSize: 'var(--font-size-body-lg)' }}>
             We received your registration{searchParams.hackathon ? ` for ${searchParams.hackathon}` : ''}.

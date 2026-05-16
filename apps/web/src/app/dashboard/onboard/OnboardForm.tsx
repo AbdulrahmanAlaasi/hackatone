@@ -25,14 +25,16 @@ export function OnboardForm() {
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        start(async () => {
-          const res = await createOrganization({ name, slug: slug || toSlug(name) });
-          if (!res.ok) {
-            setError(res.error);
-            return;
-          }
-          router.replace('/dashboard');
-          router.refresh();
+        start(() => {
+          void (async () => {
+            const res = await createOrganization({ name, slug: slug || toSlug(name) });
+            if (!res.ok) {
+              setError(res.error);
+              return;
+            }
+            router.replace('/dashboard');
+            router.refresh();
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-4)' }}

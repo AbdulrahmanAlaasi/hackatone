@@ -20,9 +20,11 @@ export function RowActions({
   const [pending, start] = useTransition();
 
   function run(fn: () => Promise<unknown>) {
-    start(async () => {
-      await fn();
-      router.refresh();
+    start(() => {
+      void (async () => {
+        await fn();
+        router.refresh();
+      })();
     });
   }
 

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
+import { PUBLIC_WEB_URL } from '@hackatone/shared';
 import { Card } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { CopyButton } from './CopyButton';
@@ -13,7 +14,7 @@ export default async function QrCodesPage({ params }: { params: { id: string } }
     .maybeSingle();
   if (!hackathon) notFound();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? PUBLIC_WEB_URL;
   const registrationUrl = `${siteUrl}/register/${hackathon.slug}`;
 
   const qrDataUrl = await QRCode.toDataURL(registrationUrl, {

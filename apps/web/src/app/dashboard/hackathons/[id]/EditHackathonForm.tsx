@@ -48,19 +48,21 @@ export function EditHackathonForm({ hackathon }: { hackathon: any }) {
         e.preventDefault();
         setError(null);
         setSaved(false);
-        start(async () => {
-          const res = await updateHackathon(hackathon.id, {
-            ...form,
-            starts_at: form.starts_at || null,
-            ends_at: form.ends_at || null,
-            registration_deadline: form.registration_deadline || null,
-            submission_deadline: form.submission_deadline || null,
-          });
-          if (!res.ok) setError(res.error);
-          else {
-            setSaved(true);
-            router.refresh();
-          }
+        start(() => {
+          void (async () => {
+            const res = await updateHackathon(hackathon.id, {
+              ...form,
+              starts_at: form.starts_at || null,
+              ends_at: form.ends_at || null,
+              registration_deadline: form.registration_deadline || null,
+              submission_deadline: form.submission_deadline || null,
+            });
+            if (!res.ok) setError(res.error);
+            else {
+              setSaved(true);
+              router.refresh();
+            }
+          })();
         });
       }}
       style={{ display: 'grid', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}

@@ -37,17 +37,19 @@ export function CriteriaEditor({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            start(async () => {
-              await addCriterion(hackathonId, {
-                name: newName,
-                description: newDesc,
-                weight: newWeight,
-                sort_order: criteria.length + 1,
-              });
-              setNewName('');
-              setNewDesc('');
-              setNewWeight(1);
-              router.refresh();
+            start(() => {
+              void (async () => {
+                await addCriterion(hackathonId, {
+                  name: newName,
+                  description: newDesc,
+                  weight: newWeight,
+                  sort_order: criteria.length + 1,
+                });
+                setNewName('');
+                setNewDesc('');
+                setNewWeight(1);
+                router.refresh();
+              })();
             });
           }}
           style={{
@@ -111,9 +113,11 @@ function CriterionCard({ hackathonId, criterion }: { hackathonId: string; criter
           variant="secondary"
           loading={pending}
           onClick={() =>
-            start(async () => {
-              await updateCriterion(hackathonId, criterion.id, { name, description: desc || null, weight });
-              router.refresh();
+            start(() => {
+              void (async () => {
+                await updateCriterion(hackathonId, criterion.id, { name, description: desc || null, weight });
+                router.refresh();
+              })();
             })
           }
         >
@@ -123,9 +127,11 @@ function CriterionCard({ hackathonId, criterion }: { hackathonId: string; criter
           variant="text"
           loading={pending}
           onClick={() =>
-            start(async () => {
-              await deleteCriterion(hackathonId, criterion.id);
-              router.refresh();
+            start(() => {
+              void (async () => {
+                await deleteCriterion(hackathonId, criterion.id);
+                router.refresh();
+              })();
             })
           }
         >

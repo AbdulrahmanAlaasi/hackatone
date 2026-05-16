@@ -25,8 +25,8 @@ export default async function CheckInPage({ params }: { params: { id: string } }
         <Card>
           <CardTitle>Scan / paste QR token</CardTitle>
           <p style={{ color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
-            Paste the participant's QR token (from their mobile app). A full camera scanner can be
-            added later — the participant's app shows the token under their QR for easy testing.
+            Paste the participant&apos;s QR token (from their mobile app). A full camera scanner can be
+            added later — the participant&apos;s app shows the token under their QR for easy testing.
           </p>
           <TokenForm hackathonId={params.id} />
         </Card>

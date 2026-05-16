@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { Badge, Card, CardTitle } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { RowActions } from '../RowActions';
@@ -83,7 +84,7 @@ export default async function ParticipantDetailPage({
   );
 }
 
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+function Detail({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: 'var(--space-3)', padding: 'var(--space-2) 0' }}>
       <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-label)', fontWeight: 700 }}>

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { ReactNode } from 'react';
 import styles from './TopHeader.module.css';
 
 export function TopHeader({
@@ -7,8 +8,8 @@ export function TopHeader({
   actions,
 }: {
   title: string;
-  subtitle?: React.ReactNode;
-  actions?: React.ReactNode;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
 }) {
   return (
     <header className={styles.header}>

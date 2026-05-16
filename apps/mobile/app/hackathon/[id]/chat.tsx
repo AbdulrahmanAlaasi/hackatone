@@ -17,6 +17,13 @@ type Message = {
 
 type Channel = { id: string; name: string; scope: 'team' | 'hackathon' };
 
+function normalizeMessages(rows: any[] | null): Message[] {
+  return (rows ?? []).map((row) => ({
+    ...row,
+    profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : (row.profiles ?? null),
+  }));
+}
+
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -61,7 +68,8 @@ export default function ChatScreen() {
 
       const list = (data ?? []) as Channel[];
       setChannels(list);
-      if (list.length > 0 && !activeId) setActiveId(list[0].id);
+      const first = list[0];
+      if (first && !activeId) setActiveId(first.id);
     })();
   }, [id, user]);
 
@@ -75,7 +83,7 @@ export default function ChatScreen() {
         .eq('channel_id', activeId)
         .order('created_at', { ascending: true })
         .limit(200);
-      setMessages((data as Message[]) ?? []);
+      setMessages(normalizeMessages(data));
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50);
     })();
 

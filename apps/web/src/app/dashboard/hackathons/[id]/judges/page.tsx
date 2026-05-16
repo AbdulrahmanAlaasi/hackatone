@@ -17,7 +17,7 @@ export default async function JudgesPage({ params }: { params: { id: string } })
           Assign a judge
         </h3>
         <p style={{ color: 'var(--color-text-muted)' }}>
-          The judge must already have a Hackatone account (any sign-up works). They'll score every
+          The judge must already have a Hackatone account (any sign-up works). They&apos;ll score every
           submission in this hackathon.
         </p>
         <AssignJudgeForm hackathonId={params.id} />

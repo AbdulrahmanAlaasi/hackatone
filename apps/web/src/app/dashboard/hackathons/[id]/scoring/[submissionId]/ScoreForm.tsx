@@ -7,6 +7,7 @@ import { saveScores } from './actions';
 
 type Criterion = { id: string; name: string; description: string | null; weight: number };
 type Existing = { criteria_id: string; score: number; comment: string | null; is_final: boolean };
+type ScoreValue = { score: number | ''; comment: string };
 
 export function ScoreForm({
   hackathonId,
@@ -24,8 +25,8 @@ export function ScoreForm({
   scoreMax: number;
 }) {
   const router = useRouter();
-  const [values, setValues] = useState<Record<string, { score: number | ''; comment: string }>>(() => {
-    const map: Record<string, { score: number | ''; comment: string }> = {};
+  const [values, setValues] = useState<Record<string, ScoreValue>>(() => {
+    const map: Record<string, ScoreValue> = {};
     criteria.forEach((c) => {
       const cur = existing.find((e) => e.criteria_id === c.id);
       map[c.id] = { score: cur ? cur.score : '', comment: cur?.comment ?? '' };
@@ -35,31 +36,37 @@ export function ScoreForm({
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
-  function set(criteriaId: string, patch: Partial<{ score: number | ''; comment: string }>) {
-    setValues((v) => ({ ...v, [criteriaId]: { ...v[criteriaId], ...patch } }));
+  function valueFor(criteriaId: string): ScoreValue {
+    return values[criteriaId] ?? { score: '', comment: '' };
+  }
+
+  function set(criteriaId: string, patch: Partial<ScoreValue>) {
+    setValues((v) => ({ ...v, [criteriaId]: { ...(v[criteriaId] ?? { score: '', comment: '' }), ...patch } }));
   }
 
   function submit(isFinal: boolean) {
     setMsg(null);
     const payload = criteria
-      .filter((c) => values[c.id].score !== '')
+      .filter((c) => valueFor(c.id).score !== '')
       .map((c) => ({
         criteriaId: c.id,
-        score: Number(values[c.id].score),
-        comment: values[c.id].comment || null,
+        score: Number(valueFor(c.id).score),
+        comment: valueFor(c.id).comment || null,
         isFinal,
       }));
     if (payload.length === 0) {
       setMsg({ kind: 'err', text: 'Score at least one criterion.' });
       return;
     }
-    start(async () => {
-      const res = await saveScores(hackathonId, submissionId, payload);
-      if (!res.ok) setMsg({ kind: 'err', text: res.error });
-      else {
-        setMsg({ kind: 'ok', text: isFinal ? 'Final scores submitted.' : 'Draft saved.' });
-        router.refresh();
-      }
+    start(() => {
+      void (async () => {
+        const res = await saveScores(hackathonId, submissionId, payload);
+        if (!res.ok) setMsg({ kind: 'err', text: res.error });
+        else {
+          setMsg({ kind: 'ok', text: isFinal ? 'Final scores submitted.' : 'Draft saved.' });
+          router.refresh();
+        }
+      })();
     });
   }
 
@@ -100,14 +107,14 @@ export function ScoreForm({
                 type="number"
                 min={scoreMin}
                 max={scoreMax}
-                value={values[c.id].score}
+                value={valueFor(c.id).score}
                 onChange={(e) => set(c.id, { score: e.target.value === '' ? '' : Number(e.target.value) })}
               />
             </Field>
             <Field label="Comment (optional)" htmlFor={`c-${c.id}`}>
               <Textarea
                 id={`c-${c.id}`}
-                value={values[c.id].comment}
+                value={valueFor(c.id).comment}
                 onChange={(e) => set(c.id, { comment: e.target.value })}
                 style={{ minHeight: 60 }}
               />

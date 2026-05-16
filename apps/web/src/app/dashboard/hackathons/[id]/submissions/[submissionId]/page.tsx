@@ -22,6 +22,7 @@ export default async function SubmissionDetailPage({
 
   const team = sub.teams as any;
   const members = (team?.team_members ?? []) as Array<{ profiles: { full_name: string; email: string } | null }>;
+  const screenshotUrls = (sub.screenshot_urls ?? []) as string[];
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)' }}>
@@ -50,11 +51,11 @@ export default async function SubmissionDetailPage({
           {sub.video_url ? <LinkRow label="Video" href={sub.video_url} /> : null}
         </div>
 
-        {sub.screenshot_urls && sub.screenshot_urls.length > 0 ? (
+        {screenshotUrls.length > 0 ? (
           <div style={{ marginTop: 'var(--space-5)' }}>
             <h3 style={{ fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>Screenshots</h3>
             <div style={{ display: 'grid', gap: 'var(--space-3)', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', marginTop: 'var(--space-2)' }}>
-              {sub.screenshot_urls.map((url, i) => (
+              {screenshotUrls.map((url, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={i}

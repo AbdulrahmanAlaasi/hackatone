@@ -24,7 +24,7 @@ export default async function PublicLeaderboardPage({
           <Card tone="soft">
             <h1 style={{ marginTop: 0, fontSize: 'var(--font-size-h1)' }}>{hackathon.title}</h1>
             <p style={{ color: 'var(--color-text-muted)' }}>
-              The leaderboard hasn't been published yet. Check back after the organizers announce results.
+              The leaderboard hasn&apos;t been published yet. Check back after the organizers announce results.
             </p>
           </Card>
         </Container>

@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Container } from '@/components/ui';
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main style={{ minHeight: '100vh', padding: '32px 0' }}>
       <Container size="form">
