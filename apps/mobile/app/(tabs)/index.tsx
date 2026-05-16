@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Splash } from '../../src/components/Splash';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -79,13 +80,7 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   if (rows === null) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={tokens.color.primary} />
-        </View>
-      </SafeAreaView>
-    );
+    return <Splash tagline="Loading your hackathons…" />;
   }
 
   const accepted = rows.filter((r) => r.status === 'accepted' && r.hackathons);

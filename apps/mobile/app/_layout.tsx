@@ -2,8 +2,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../src/auth/AuthProvider';
+import { Splash } from '../src/components/Splash';
 import { tokens } from '../src/theme';
 
 function ProtectedRouter({ children }: { children: React.ReactNode }) {
@@ -19,11 +19,7 @@ function ProtectedRouter({ children }: { children: React.ReactNode }) {
   }, [session, loading, segments, router]);
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: tokens.color.background }}>
-        <ActivityIndicator color={tokens.color.primary} />
-      </View>
-    );
+    return <Splash />;
   }
   return <>{children}</>;
 }
@@ -34,7 +30,12 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <AuthProvider>
         <ProtectedRouter>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.color.background } }} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: tokens.color.background },
+            }}
+          />
         </ProtectedRouter>
       </AuthProvider>
     </SafeAreaProvider>
