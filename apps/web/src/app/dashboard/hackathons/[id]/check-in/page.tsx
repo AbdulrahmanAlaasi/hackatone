@@ -1,6 +1,6 @@
 import { Card, CardTitle } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
-import { CheckInPanel } from './CheckInPanel';
+import { TokenForm, ManualList } from './CheckInPanel';
 
 export default async function CheckInPage({ params }: { params: { id: string } }) {
   const { supabase } = await getCurrentUserOrRedirect();
@@ -28,7 +28,7 @@ export default async function CheckInPage({ params }: { params: { id: string } }
             Paste the participant's QR token (from their mobile app). A full camera scanner can be
             added later — the participant's app shows the token under their QR for easy testing.
           </p>
-          <CheckInPanel.TokenForm hackathonId={params.id} />
+          <TokenForm hackathonId={params.id} />
         </Card>
 
         <Card>
@@ -36,7 +36,7 @@ export default async function CheckInPage({ params }: { params: { id: string } }
           <p style={{ color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
             Search by name, email, or company.
           </p>
-          <CheckInPanel.ManualList hackathonId={params.id} accepted={accepted ?? []} />
+          <ManualList hackathonId={params.id} accepted={accepted ?? []} />
         </Card>
       </div>
     </div>

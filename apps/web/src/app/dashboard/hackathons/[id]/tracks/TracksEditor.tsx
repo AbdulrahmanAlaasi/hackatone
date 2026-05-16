@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
 import { addTrack, deleteTrack } from '../actions';
 
-function TracksEditorBase({ hackathonId }: { hackathonId: string; tracks: Array<{ id: string; name: string; description: string | null }> }) {
+export function TracksEditor({ hackathonId }: { hackathonId: string }) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -42,7 +42,7 @@ function TracksEditorBase({ hackathonId }: { hackathonId: string; tracks: Array<
   );
 }
 
-function DeleteButton({ hackathonId, trackId }: { hackathonId: string; trackId: string }) {
+export function DeleteTrackButton({ hackathonId, trackId }: { hackathonId: string; trackId: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   return (
@@ -60,5 +60,3 @@ function DeleteButton({ hackathonId, trackId }: { hackathonId: string; trackId: 
     </Button>
   );
 }
-
-export const TracksEditor = Object.assign(TracksEditorBase, { DeleteButton });

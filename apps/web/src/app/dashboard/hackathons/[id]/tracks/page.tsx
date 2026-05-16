@@ -1,6 +1,6 @@
 import { Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
-import { TracksEditor } from './TracksEditor';
+import { TracksEditor, DeleteTrackButton } from './TracksEditor';
 
 export default async function TracksPage({ params }: { params: { id: string } }) {
   const { supabase } = await getCurrentUserOrRedirect();
@@ -14,7 +14,7 @@ export default async function TracksPage({ params }: { params: { id: string } })
     <div style={{ display: 'grid', gap: 'var(--space-6)' }}>
       <Card>
         <h2 style={{ marginTop: 0, fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>Add a track</h2>
-        <TracksEditor hackathonId={params.id} tracks={tracks ?? []} />
+        <TracksEditor hackathonId={params.id} />
       </Card>
 
       {(tracks?.length ?? 0) === 0 ? (
@@ -34,7 +34,7 @@ export default async function TracksPage({ params }: { params: { id: string } })
                 <Td><strong>{t.name}</strong></Td>
                 <Td>{t.description ?? '—'}</Td>
                 <Td>
-                  <TracksEditor.DeleteButton hackathonId={params.id} trackId={t.id} />
+                  <DeleteTrackButton hackathonId={params.id} trackId={t.id} />
                 </Td>
               </Tr>
             ))}

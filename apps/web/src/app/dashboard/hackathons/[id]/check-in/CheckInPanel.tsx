@@ -13,7 +13,7 @@ type Accepted = {
   checked_in_at: string | null;
 };
 
-function TokenForm({ hackathonId }: { hackathonId: string }) {
+export function TokenForm({ hackathonId }: { hackathonId: string }) {
   const router = useRouter();
   const [token, setToken] = useState('');
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
@@ -70,7 +70,7 @@ function TokenForm({ hackathonId }: { hackathonId: string }) {
   );
 }
 
-function ManualList({ hackathonId, accepted }: { hackathonId: string; accepted: Accepted[] }) {
+export function ManualList({ hackathonId, accepted }: { hackathonId: string; accepted: Accepted[] }) {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -153,4 +153,3 @@ function ManualList({ hackathonId, accepted }: { hackathonId: string; accepted: 
   );
 }
 
-export const CheckInPanel = { TokenForm, ManualList };
