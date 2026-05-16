@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.open-next/
 dist/
 build/
 .expo/
@@ -14,3 +15,5 @@ web-build/
 coverage/
 .vscode/
 .idea/
+fix-*.mjs
+fix-*.ps1
