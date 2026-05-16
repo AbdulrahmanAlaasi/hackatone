@@ -1,185 +1,112 @@
 import { useEffect } from 'react';
 import { Dimensions, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
+  interpolate,
+  useAnimatedProps,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withDelay,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 import { tokens } from '../theme';
 
-const { width: SCREEN_W } = Dimensions.get('window');
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// Breathing range — blob height as a fraction of screen height
+const MIN_H = 0.42;
+const MAX_H = 0.62;
+// Arc depth — how much the top of the blob curves up
+const ARC_MIN = 60;
+const ARC_MAX = 110;
+
+const BREATH_MS = 2800;
 
 /**
- * Hackatone splash / loading screen.
+ * Hackatone loading screen.
  *
- * - Warm sunrise background.
- * - Three concentric orange "breathing" rings (scale + opacity loop).
- * - Wordmark fades up after a small delay.
- *
- * Use as a full-screen overlay any time the app is bootstrapping
- * (auth check, initial fetch, route transitions).
+ * White background with a warm-orange blob rising from the bottom that
+ * "breathes" — height + top-arc curve expand and contract on a gentle
+ * ~2.8s sine loop. Tagline fades in at the top.
  */
-export function Splash({ tagline }: { tagline?: string }) {
-  // Breathing scale: 0.85 → 1.15 → 0.85, 2.4s loop
-  const breath = useSharedValue(0.85);
-  // Wordmark fade-in
-  const wordOpacity = useSharedValue(0);
-  const wordY = useSharedValue(12);
+export function Splash({ tagline = 'Loading' }: { tagline?: string }) {
+  const breath = useSharedValue(0);
+  const textOpacity = useSharedValue(0);
+  const textY = useSharedValue(12);
 
   useEffect(() => {
     breath.value = withRepeat(
-      withTiming(1.15, { duration: 2400, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      withTiming(1, { duration: BREATH_MS, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-    wordOpacity.value = withDelay(250, withTiming(1, { duration: 600 }));
-    wordY.value = withDelay(250, withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }));
-  }, [breath, wordOpacity, wordY]);
+    textOpacity.value = withDelay(150, withTiming(1, { duration: 600 }));
+    textY.value = withDelay(
+      150,
+      withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [breath, textOpacity, textY]);
 
-  const ringOuter = useAnimatedStyle(() => ({
-    transform: [{ scale: breath.value }],
-    opacity: 0.18,
-  }));
-  const ringMid = useAnimatedStyle(() => ({
-    transform: [{ scale: 0.78 + (breath.value - 0.85) * 0.9 }],
-    opacity: 0.35,
-  }));
-  const ringInner = useAnimatedStyle(() => ({
-    transform: [{ scale: 0.6 + (breath.value - 0.85) * 0.7 }],
-    opacity: 1,
-  }));
-  const wordStyle = useAnimatedStyle(() => ({
-    opacity: wordOpacity.value,
-    transform: [{ translateY: wordY.value }],
-  }));
+  const height = useDerivedValue(() =>
+    interpolate(breath.value, [0, 1], [MIN_H, MAX_H]) * SCREEN_H,
+  );
+  const arc = useDerivedValue(() => interpolate(breath.value, [0, 1], [ARC_MIN, ARC_MAX]));
 
-  const ringSize = Math.min(SCREEN_W * 0.65, 320);
+  const animatedProps = useAnimatedProps(() => {
+    const h = height.value;
+    const a = arc.value;
+    const topY = SCREEN_H - h;
+    const arcPeakY = topY - a;
+    // Quadratic curve from bottom-left edge, peaking up over the screen center, back down to bottom-right.
+    return {
+      d: `M 0 ${topY} Q ${SCREEN_W / 2} ${arcPeakY} ${SCREEN_W} ${topY} L ${SCREEN_W} ${SCREEN_H} L 0 ${SCREEN_H} Z`,
+    };
+  });
+
+  const textStyle = useAnimatedStyle(() => ({
+    opacity: textOpacity.value,
+    transform: [{ translateY: textY.value }],
+  }));
 
   return (
-    <View style={{ flex: 1, backgroundColor: tokens.color.background }}>
-      <LinearGradient
-        colors={['#FFE8CC', '#FFD0A8', '#FFB279']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <Svg
+        width={SCREEN_W}
+        height={SCREEN_H}
+        style={{ position: 'absolute', top: 0, left: 0 }}
       >
-        {/* Stacked rings — outer/mid/inner */}
-        <View style={{ width: ringSize, height: ringSize, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                width: ringSize,
-                height: ringSize,
-                borderRadius: ringSize / 2,
-                backgroundColor: '#FFFFFF',
-              },
-              ringOuter,
-            ]}
-          />
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                width: ringSize,
-                height: ringSize,
-                borderRadius: ringSize / 2,
-                backgroundColor: '#FFFFFF',
-              },
-              ringMid,
-            ]}
-          />
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                width: ringSize,
-                height: ringSize,
-                borderRadius: ringSize / 2,
-                backgroundColor: tokens.color.primary,
-                shadowColor: '#E96F26',
-                shadowOpacity: 0.5,
-                shadowRadius: 30,
-                shadowOffset: { width: 0, height: 12 },
-              },
-              ringInner,
-            ]}
-          />
-        </View>
+        <AnimatedPath animatedProps={animatedProps} fill={tokens.color.primary} />
+      </Svg>
 
-        {/* Wordmark */}
+      <View
+        style={{
+          position: 'absolute',
+          top: SCREEN_H * 0.18,
+          left: 0,
+          right: 0,
+          alignItems: 'center',
+        }}
+        pointerEvents="none"
+      >
         <Animated.Text
           style={[
             {
-              marginTop: 56,
-              fontSize: 34,
-              fontWeight: '900',
+              fontSize: 26,
+              fontWeight: '800',
               color: tokens.color.text,
-              letterSpacing: -0.5,
+              letterSpacing: -0.3,
             },
-            wordStyle,
+            textStyle,
           ]}
         >
-          Hackatone
+          {tagline}
         </Animated.Text>
-        {tagline ? (
-          <Animated.Text
-            style={[
-              {
-                marginTop: 8,
-                fontSize: 14,
-                fontWeight: '700',
-                color: '#7A4E2A',
-                opacity: 0.85,
-              },
-              wordStyle,
-            ]}
-          >
-            {tagline}
-          </Animated.Text>
-        ) : (
-          <Animated.View style={[{ marginTop: 12 }, wordStyle]}>
-            <BreathingDots />
-          </Animated.View>
-        )}
-      </LinearGradient>
+      </View>
     </View>
-  );
-}
-
-/** Three staggered fading dots beneath the wordmark. */
-function BreathingDots() {
-  return (
-    <View style={{ flexDirection: 'row', gap: 8 }}>
-      <Dot delay={0} />
-      <Dot delay={220} />
-      <Dot delay={440} />
-    </View>
-  );
-}
-
-function Dot({ delay }: { delay: number }) {
-  const v = useSharedValue(0.3);
-  useEffect(() => {
-    v.value = withDelay(
-      delay,
-      withRepeat(withTiming(1, { duration: 700, easing: Easing.inOut(Easing.quad) }), -1, true),
-    );
-  }, [v, delay]);
-  const style = useAnimatedStyle(() => ({
-    opacity: v.value,
-    transform: [{ scale: 0.8 + v.value * 0.4 }],
-  }));
-  return (
-    <Animated.View
-      style={[
-        { width: 8, height: 8, borderRadius: 4, backgroundColor: tokens.color.primaryPressed },
-        style,
-      ]}
-    />
   );
 }
