@@ -14,3 +14,4 @@
 .info      { background: var(--color-info);         color: #1d3a5b; }
 .primary   { background: var(--color-primary);      color: #fff; }
 .secondary { background: var(--color-secondary);    color: var(--color-text); }
+.cream     { background: #FFE8D6;                  color: #7A4E2A; }

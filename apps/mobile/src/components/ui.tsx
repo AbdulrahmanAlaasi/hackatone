@@ -183,14 +183,14 @@ export function Card({
 // =========================================================================
 
 export function ActionTile({
-  icon,
+  Icon,
   title,
   subtitle,
   tone = 'sunrise',
   onPress,
   disabled,
 }: {
-  icon: string;
+  Icon: (p: { size?: number; color?: string }) => React.JSX.Element;
   title: string;
   subtitle?: string;
   tone?: HeroTone | 'plain';
@@ -221,7 +221,7 @@ export function ActionTile({
         end={{ x: 1, y: 1 }}
         style={s.tile}
       >
-        <Text style={{ fontSize: 30 }}>{icon}</Text>
+        <Icon size={28} color={textColor} />
         <Text style={[s.tileTitle, { color: textColor }]}>{title}</Text>
         {subtitle ? (
           <Text style={[s.tileSubtitle, { color: textColor, opacity: 0.85 }]}>{subtitle}</Text>

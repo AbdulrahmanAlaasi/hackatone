@@ -18,6 +18,8 @@ interface CreateInput {
   max_team_size: number;
   team_mode: 'organizer_assigns' | 'participant_creates' | 'team_code' | 'invite_link' | 'hybrid';
   solo_allowed: boolean;
+  visibility: 'public' | 'private';
+  field: string | null;
 }
 
 export async function createHackathon(input: CreateInput) {

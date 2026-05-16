@@ -1,27 +1,37 @@
 import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
+import { Icon } from '../../src/components/Icon';
 import { tokens } from '../../src/theme';
 
-function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
+function TabIcon({
+  icon: IconCmp,
+  label,
+  focused,
+}: {
+  icon: (p: { size?: number; color?: string }) => JSX.Element;
+  label: string;
+  focused: boolean;
+}) {
   return (
     <View
       style={{
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
         paddingVertical: 6,
         borderRadius: tokens.radius.full,
         backgroundColor: focused ? tokens.color.surfaceSoft : 'transparent',
-        minWidth: 72,
+        minWidth: 78,
       }}
     >
-      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.6 }}>{emoji}</Text>
+      <IconCmp size={20} color={focused ? tokens.color.primaryPressed : tokens.color.textMuted} />
       <Text
         style={{
           fontSize: 10,
           fontWeight: '800',
           color: focused ? tokens.color.primaryPressed : tokens.color.textMuted,
-          marginTop: 2,
+          marginTop: 4,
+          letterSpacing: 0.4,
         }}
       >
         {label}
@@ -52,15 +62,15 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" label="Home" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon={Icon.Home} label="HOME" focused={focused} /> }}
       />
       <Tabs.Screen
         name="qr"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="📱" label="QR" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon={Icon.QrCode} label="QR" focused={focused} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👤" label="Profile" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon={Icon.User} label="PROFILE" focused={focused} /> }}
       />
     </Tabs>
   );

@@ -8,3 +8,4 @@ export * from './Table';
 export * from './Container';
 export * from './Hero';
 export * from './ActionTile';
+export * from './Icon';

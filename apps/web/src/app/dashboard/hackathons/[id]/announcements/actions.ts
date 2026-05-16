@@ -38,3 +38,26 @@ export async function createAnnouncement(hackathonId: string, title: string, bod
   revalidatePath(`/dashboard/hackathons/${hackathonId}/announcements`);
   return { ok: true as const };
 }
+
+export async function toggleAnnouncementHidden(
+  hackathonId: string,
+  announcementId: string,
+  hidden: boolean,
+) {
+  const { supabase } = await getCurrentUserOrRedirect();
+  const { error } = await supabase
+    .from('announcements')
+    .update({ hidden })
+    .eq('id', announcementId);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath(`/dashboard/hackathons/${hackathonId}/announcements`);
+  return { ok: true as const };
+}
+
+export async function deleteAnnouncement(hackathonId: string, announcementId: string) {
+  const { supabase } = await getCurrentUserOrRedirect();
+  const { error } = await supabase.from('announcements').delete().eq('id', announcementId);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath(`/dashboard/hackathons/${hackathonId}/announcements`);
+  return { ok: true as const };
+}

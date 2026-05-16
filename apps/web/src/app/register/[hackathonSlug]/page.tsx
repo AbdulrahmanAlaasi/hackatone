@@ -43,11 +43,11 @@ export default async function PublicRegistrationPage({
           }}
         >
           <Badge tone={open ? 'success' : 'warning'}>
-            {open ? '✓ Registration open' : hackathon.status.replace('_', ' ')}
+            {open ? 'Registration open' : hackathon.status.replace('_', ' ')}
           </Badge>
-          {hackathon.location ? <Badge tone="neutral">📍 {hackathon.location}</Badge> : null}
+          {hackathon.location ? <Badge tone="neutral">{hackathon.location}</Badge> : null}
           {hackathon.starts_at ? (
-            <Badge tone="neutral">📅 {new Date(hackathon.starts_at).toLocaleDateString()}</Badge>
+            <Badge tone="neutral">{new Date(hackathon.starts_at).toLocaleDateString()}</Badge>
           ) : null}
         </div>
         {hackathon.description ? (

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { Splash } from '../../src/components/Splash';
+import { Icon } from '../../src/components/Icon';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -188,9 +189,13 @@ export default function HomeScreen() {
                         justifyContent: 'center',
                       }}
                     >
-                      <P style={{ fontSize: 26 }}>
-                        {item.status === 'accepted' ? '🚀' : item.status === 'pending' ? '⏳' : '📨'}
-                      </P>
+                      {item.status === 'accepted' ? (
+                        <Icon.Rocket size={26} color={tokens.color.primaryPressed} />
+                      ) : item.status === 'pending' ? (
+                        <Icon.Hourglass size={24} color="#1d3a5b" />
+                      ) : (
+                        <Icon.Mail size={22} color={tokens.color.textMuted} />
+                      )}
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <P style={{ fontWeight: '800' }} numberOfLines={1}>

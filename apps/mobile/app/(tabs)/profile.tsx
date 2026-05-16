@@ -112,7 +112,7 @@ export default function ProfileScreen() {
               />
             </Field>
             <Button title="Save profile" onPress={save} loading={saving} fullWidth />
-            {saved ? <Muted style={{ marginTop: 12, color: tokens.color.successText, textAlign: 'center' }}>✓ Saved</Muted> : null}
+            {saved ? <Muted style={{ marginTop: 12, color: tokens.color.successText, textAlign: 'center' }}>Saved</Muted> : null}
           </Card>
 
           <H3 style={{ marginTop: tokens.space[6], marginBottom: tokens.space[3] }}>Account</H3>

@@ -107,7 +107,7 @@ export default function MyQrScreen() {
             <Muted style={{ textAlign: 'center' }}>{hackathon?.title}</Muted>
             <View style={{ flexDirection: 'row', gap: tokens.space[2], marginTop: tokens.space[3] }}>
               {team ? <Badge tone="info">Team: {team.name}</Badge> : null}
-              {registration.checked_in_at ? <Badge tone="success">✓ Checked in</Badge> : null}
+              {registration.checked_in_at ? <Badge tone="success">Checked in</Badge> : null}
             </View>
           </Card>
 

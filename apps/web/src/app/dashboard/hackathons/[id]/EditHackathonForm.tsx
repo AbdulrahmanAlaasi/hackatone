@@ -35,6 +35,8 @@ export function EditHackathonForm({ hackathon }: { hackathon: any }) {
     prizes: hackathon.prizes ?? '',
     chat_enabled: !!hackathon.chat_enabled,
     public_gallery_enabled: !!hackathon.public_gallery_enabled,
+    visibility: (hackathon.visibility ?? 'private') as 'public' | 'private',
+    field: hackathon.field ?? '',
   });
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -136,6 +138,15 @@ export function EditHackathonForm({ hackathon }: { hackathon: any }) {
             <option value="false">Hidden</option>
             <option value="true">Public</option>
           </Select>
+        </Field>
+        <Field label="Visibility" htmlFor="vis2" hint="Public = listed in the participant app browse.">
+          <Select id="vis2" value={form.visibility} onChange={(e) => set('visibility', e.target.value as 'public' | 'private')}>
+            <option value="private">Private (QR/link only)</option>
+            <option value="public">Public (listed)</option>
+          </Select>
+        </Field>
+        <Field label="Field / category" htmlFor="field">
+          <Input id="field" value={form.field} onChange={(e) => set('field', e.target.value)} placeholder="e.g. AI / ML" />
         </Field>
       </div>
 

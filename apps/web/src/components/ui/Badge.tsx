@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from './Badge.module.css';
 import { cn } from '@/lib/cn';
 
-type Tone = 'neutral' | 'success' | 'warning' | 'info' | 'primary' | 'secondary';
+type Tone = 'neutral' | 'success' | 'warning' | 'info' | 'primary' | 'secondary' | 'cream';
 
 export function Badge({
   tone = 'neutral',

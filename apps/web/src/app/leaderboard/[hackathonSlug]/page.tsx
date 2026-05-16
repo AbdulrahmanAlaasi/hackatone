@@ -64,7 +64,7 @@ export default async function PublicLeaderboardPage({
         <Eyebrow light>Final results</Eyebrow>
         <Display light>{hackathon.title}</Display>
         <p style={{ color: 'rgba(255,255,255,0.95)', marginTop: 'var(--space-3)' }}>
-          Congratulations to every team that shipped 🎉
+          Congratulations to every team that shipped.
         </p>
       </Hero>
 
@@ -81,10 +81,10 @@ export default async function PublicLeaderboardPage({
           >
             {winners.map((r: any, i) => {
               const tone = (['cream', 'peach', 'sky'] as const)[i];
-              const medal = ['🥇', '🥈', '🥉'][i];
+              const rankLabel = ['1st', '2nd', '3rd'][i];
               return (
                 <Card key={r.submissions?.title} tone={tone}>
-                  <div style={{ fontSize: 36 }}>{medal}</div>
+                  <p style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: 'var(--color-primary-pressed)', margin: 0, textTransform: 'uppercase' }}>{rankLabel}</p>
                   <p style={{ fontSize: 'var(--font-size-h3)', fontWeight: 800, margin: '8px 0 4px' }}>
                     {r.submissions?.title}
                   </p>

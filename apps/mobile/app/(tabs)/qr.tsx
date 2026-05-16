@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge, Card, Display, Eyebrow, H3, Hero, Muted, P } from '../../src/components/ui';
+import { Icon } from '../../src/components/Icon';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { tokens } from '../../src/theme';
@@ -87,13 +88,13 @@ export default function QrTab() {
                       justifyContent: 'center',
                     }}
                   >
-                    <P style={{ fontSize: 24 }}>📱</P>
+                    <Icon.QrCode size={24} color={tokens.color.primaryPressed} />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <P style={{ fontWeight: '800' }} numberOfLines={1}>{h.title}</P>
-                    {h.location ? <Muted numberOfLines={1}>📍 {h.location}</Muted> : null}
+                    {h.location ? <Muted numberOfLines={1}>{h.location}</Muted> : null}
                   </View>
-                  {h.checked_in ? <Badge tone="success">✓ In</Badge> : <Badge tone="cream">Tap</Badge>}
+                  {h.checked_in ? <Badge tone="success">Checked in</Badge> : <Badge tone="cream">Open</Badge>}
                 </Card>
               </Pressable>
             ))

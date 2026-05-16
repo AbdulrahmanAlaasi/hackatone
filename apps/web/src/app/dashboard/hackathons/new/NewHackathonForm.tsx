@@ -27,6 +27,9 @@ export function NewHackathonForm({ organizationId }: { organizationId: string })
   const [maxTeamSize, setMaxTeamSize] = useState(5);
   const [teamMode, setTeamMode] = useState<'organizer_assigns' | 'participant_creates' | 'team_code' | 'invite_link' | 'hybrid'>('participant_creates');
   const [soloAllowed, setSoloAllowed] = useState(false);
+  const [visibility, setVisibility] = useState<'public' | 'private'>('private');
+  const [fieldPreset, setFieldPreset] = useState('');
+  const [fieldCustom, setFieldCustom] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -51,6 +54,8 @@ export function NewHackathonForm({ organizationId }: { organizationId: string })
               max_team_size: maxTeamSize,
               team_mode: teamMode,
               solo_allowed: soloAllowed,
+              visibility,
+              field: (fieldPreset === '__custom' ? fieldCustom : fieldPreset) || null,
             });
             if (!res.ok) {
               setError(res.error);
@@ -127,6 +132,36 @@ export function NewHackathonForm({ organizationId }: { organizationId: string })
             <option value="true">Allowed</option>
           </Select>
         </Field>
+        <Field label="Visibility" htmlFor="vis" hint="Public hackathons show up in the participant app browse list.">
+          <Select id="vis" value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}>
+            <option value="private">Private (QR/link only)</option>
+            <option value="public">Public (listed in app)</option>
+          </Select>
+        </Field>
+      </div>
+
+      <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: fieldPreset === '__custom' ? '1fr 1fr' : '1fr' }}>
+        <Field label="Field / category" htmlFor="field">
+          <Select id="field" value={fieldPreset} onChange={(e) => setFieldPreset(e.target.value)}>
+            <option value="">No field</option>
+            <option value="AI / Machine Learning">AI / Machine Learning</option>
+            <option value="Web Development">Web Development</option>
+            <option value="Mobile Development">Mobile Development</option>
+            <option value="Game Development">Game Development</option>
+            <option value="Hardware / IoT">Hardware / IoT</option>
+            <option value="Blockchain / Web3">Blockchain / Web3</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Sustainability / Climate">Sustainability / Climate</option>
+            <option value="Education">Education</option>
+            <option value="Open Innovation">Open Innovation</option>
+            <option value="__custom">Custom…</option>
+          </Select>
+        </Field>
+        {fieldPreset === '__custom' ? (
+          <Field label="Custom field" htmlFor="field_custom">
+            <Input id="field_custom" required value={fieldCustom} onChange={(e) => setFieldCustom(e.target.value)} placeholder="e.g. AR/VR" />
+          </Field>
+        ) : null}
       </div>
 
       {error ? <p style={{ color: 'var(--color-warning-text)', fontWeight: 700 }}>{error}</p> : null}
