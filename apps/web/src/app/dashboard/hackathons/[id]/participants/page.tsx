@@ -1,5 +1,8 @@
-import { Badge, Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
+import Link from 'next/link';
+import { Badge, Card, EmptyState, SearchBar, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
+import { ParticipantsFilters } from './ParticipantsFilters';
+import { RowActions } from './RowActions';
 
 const TONES: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
   accepted: 'success',
@@ -9,16 +12,40 @@ const TONES: Record<string, 'success' | 'warning' | 'info' | 'neutral'> = {
   withdrawn: 'neutral',
 };
 
-export default async function ParticipantsPage({ params }: { params: { id: string } }) {
+export default async function ParticipantsPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { status?: string; q?: string };
+}) {
   const { supabase } = await getCurrentUserOrRedirect();
-  const { data: registrations } = await supabase
+
+  let query = supabase
     .from('registrations')
-    .select('id, full_name, email, status, created_at, checked_in_at, organization_or_company')
+    .select(
+      'id, full_name, email, status, created_at, checked_in_at, organization_or_company',
+    )
     .eq('hackathon_id', params.id)
     .order('created_at', { ascending: false });
 
+  if (searchParams.status && searchParams.status !== 'all') {
+    query = query.eq('status', searchParams.status);
+  }
+  if (searchParams.q) {
+    const q = `%${searchParams.q}%`;
+    query = query.or(`full_name.ilike.${q},email.ilike.${q},organization_or_company.ilike.${q}`);
+  }
+
+  const { data: registrations } = await query;
   const list = registrations ?? [];
-  const counts = list.reduce(
+
+  // counts (ignoring filter) for the summary strip
+  const { data: all } = await supabase
+    .from('registrations')
+    .select('status')
+    .eq('hackathon_id', params.id);
+  const counts = (all ?? []).reduce(
     (acc, r) => {
       acc[r.status] = (acc[r.status] ?? 0) + 1;
       return acc;
@@ -29,17 +56,15 @@ export default async function ParticipantsPage({ params }: { params: { id: strin
   return (
     <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
       <Card tone="soft">
-        <strong>{list.length}</strong> total ·{' '}
-        <strong>{counts.pending ?? 0}</strong> pending ·{' '}
-        <strong>{counts.accepted ?? 0}</strong> accepted ·{' '}
-        <strong>{counts.rejected ?? 0}</strong> rejected
+        <strong>{all?.length ?? 0}</strong> total · <strong>{counts.pending ?? 0}</strong> pending ·{' '}
+        <strong>{counts.accepted ?? 0}</strong> accepted · <strong>{counts.rejected ?? 0}</strong>{' '}
+        rejected
       </Card>
 
+      <ParticipantsFilters status={searchParams.status ?? 'all'} q={searchParams.q ?? ''} />
+
       {list.length === 0 ? (
-        <EmptyState
-          title="No registrations yet"
-          body="Share the public registration link or QR code to get started."
-        />
+        <EmptyState title="No matches" body="Try clearing the filters or share the public registration link." />
       ) : (
         <Table>
           <Thead>
@@ -49,26 +74,36 @@ export default async function ParticipantsPage({ params }: { params: { id: strin
               <Th>Org / company</Th>
               <Th>Status</Th>
               <Th>Checked in</Th>
-              <Th>Registered</Th>
+              <Th>Actions</Th>
             </Tr>
           </Thead>
           <Tbody>
             {list.map((r) => (
               <Tr key={r.id}>
-                <Td><strong>{r.full_name}</strong></Td>
+                <Td>
+                  <Link href={`/dashboard/hackathons/${params.id}/participants/${r.id}`}>
+                    <strong>{r.full_name}</strong>
+                  </Link>
+                </Td>
                 <Td>{r.email}</Td>
                 <Td>{r.organization_or_company ?? '—'}</Td>
-                <Td><Badge tone={TONES[r.status] ?? 'neutral'}>{r.status}</Badge></Td>
+                <Td>
+                  <Badge tone={TONES[r.status] ?? 'neutral'}>{r.status}</Badge>
+                </Td>
                 <Td>{r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : '—'}</Td>
-                <Td>{new Date(r.created_at).toLocaleDateString()}</Td>
+                <Td>
+                  <RowActions
+                    hackathonId={params.id}
+                    registrationId={r.id}
+                    status={r.status as any}
+                    checkedIn={!!r.checked_in_at}
+                  />
+                </Td>
               </Tr>
             ))}
           </Tbody>
         </Table>
       )}
-      <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-caption)' }}>
-        Accept / reject actions and the participant detail drawer land in Prompt 6.
-      </p>
     </div>
   );
 }

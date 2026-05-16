@@ -7,6 +7,7 @@ import styles from './layout.module.css';
 const TABS = [
   { href: '', label: 'Overview' },
   { href: '/participants', label: 'Participants' },
+  { href: '/check-in', label: 'Check-in' },
   { href: '/tracks', label: 'Tracks' },
   { href: '/criteria', label: 'Judging criteria' },
   { href: '/qr-codes', label: 'QR & registration' },
