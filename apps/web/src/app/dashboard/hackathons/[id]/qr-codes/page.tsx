@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import QRCode from 'qrcode';
 import { PUBLIC_WEB_URL } from '@hackatone/shared';
 import { Card } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { CopyButton } from './CopyButton';
+import { QrCodeCard } from './QrCodeCard';
 
 export default async function QrCodesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,12 +17,6 @@ export default async function QrCodesPage({ params }: { params: Promise<{ id: st
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? PUBLIC_WEB_URL;
   const registrationUrl = `${siteUrl}/register/${hackathon.slug}`;
-
-  const qrDataUrl = await QRCode.toDataURL(registrationUrl, {
-    width: 480,
-    margin: 2,
-    color: { dark: '#2B2B2B', light: '#FFFFFF' },
-  });
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-6)', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
@@ -54,23 +48,11 @@ export default async function QrCodesPage({ params }: { params: Promise<{ id: st
         </div>
       </Card>
 
-      <Card>
-        <h2 style={{ marginTop: 0, fontSize: 'var(--font-size-h2)', fontWeight: 800 }}>QR code</h2>
-        <p style={{ color: 'var(--color-text-muted)' }}>Print or display this for in-person registration.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-4)' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={qrDataUrl}
-            alt={`Registration QR for ${hackathon.title}`}
-            width={320}
-            height={320}
-            style={{ borderRadius: 'var(--radius-md)' }}
-          />
-        </div>
-        <a href={qrDataUrl} download={`hackatone-${hackathon.slug}.png`}>
-          Download PNG
-        </a>
-      </Card>
+      <QrCodeCard
+        registrationUrl={registrationUrl}
+        hackathonTitle={hackathon.title}
+        hackathonSlug={hackathon.slug}
+      />
     </div>
   );
 }
