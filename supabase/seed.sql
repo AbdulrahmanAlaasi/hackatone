@@ -12,8 +12,7 @@
 -- =========================================================================
 -- Auth users
 -- =========================================================================
--- bcrypt hash for "Hackatone!23"
-\set demo_pw 'crypt(''Hackatone!23'', gen_salt(''bf''))'
+-- Password for all demo users is "Hackatone!23" (hashed inline via crypt() below).
 
 create extension if not exists pgcrypto;
 
