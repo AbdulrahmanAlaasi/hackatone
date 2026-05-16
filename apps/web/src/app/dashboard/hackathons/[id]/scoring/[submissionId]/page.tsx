@@ -7,42 +7,43 @@ import { ScoreForm } from './ScoreForm';
 export default async function ScoreSubmissionPage({
   params,
 }: {
-  params: { id: string; submissionId: string };
+  params: Promise<{ id: string; submissionId: string }>;
 }) {
+  const { id, submissionId } = await params;
   const { supabase, user } = await getCurrentUserOrRedirect();
 
   const { data: sub } = await supabase
     .from('submissions')
     .select('id, title, description, github_url, demo_url, video_url, teams(name)')
-    .eq('id', params.submissionId)
-    .eq('hackathon_id', params.id)
+    .eq('id', submissionId)
+    .eq('hackathon_id', id)
     .maybeSingle();
   if (!sub) notFound();
 
   const { data: criteria } = await supabase
     .from('judging_criteria')
     .select('id, name, description, weight')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('sort_order', { ascending: true });
 
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('score_min, score_max')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   const { data: myScores } = await supabase
     .from('scores')
     .select('criteria_id, score, comment, is_final')
-    .eq('hackathon_id', params.id)
-    .eq('submission_id', params.submissionId)
+    .eq('hackathon_id', id)
+    .eq('submission_id', submissionId)
     .eq('judge_id', user.id);
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
       <Card>
         <Link
-          href={`/dashboard/hackathons/${params.id}/scoring`}
+          href={`/dashboard/hackathons/${id}/scoring`}
           style={{ fontSize: 'var(--font-size-caption)' }}
         >
           ← All submissions
@@ -58,8 +59,8 @@ export default async function ScoreSubmissionPage({
       </Card>
 
       <ScoreForm
-        hackathonId={params.id}
-        submissionId={params.submissionId}
+        hackathonId={id}
+        submissionId={submissionId}
         criteria={criteria ?? []}
         existing={myScores ?? []}
         scoreMin={hackathon?.score_min ?? 1}

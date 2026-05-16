@@ -2,18 +2,19 @@ import { Badge, Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/comp
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { PublishButton } from './PublishButton';
 
-export default async function LeaderboardPage({ params }: { params: { id: string } }) {
+export default async function LeaderboardPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('id, slug, leaderboard_published')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   const { data: rows } = await supabase
     .from('leaderboard_results')
     .select('rank, total_score, impact_score, is_winner, submissions(id, title, teams(name))')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('rank', { ascending: true });
 
   const list = rows ?? [];
@@ -32,7 +33,7 @@ export default async function LeaderboardPage({ params }: { params: { id: string
         )}
       </Card>
 
-      <PublishButton hackathonId={params.id} published={!!hackathon?.leaderboard_published} slug={hackathon?.slug ?? ''} />
+      <PublishButton hackathonId={id} published={!!hackathon?.leaderboard_published} slug={hackathon?.slug ?? ''} />
 
       {list.length === 0 ? (
         <EmptyState

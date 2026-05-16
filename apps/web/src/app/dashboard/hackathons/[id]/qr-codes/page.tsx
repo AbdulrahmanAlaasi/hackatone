@@ -5,12 +5,13 @@ import { Card } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { CopyButton } from './CopyButton';
 
-export default async function QrCodesPage({ params }: { params: { id: string } }) {
+export default async function QrCodesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('id, title, slug')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
   if (!hackathon) notFound();
 

@@ -3,19 +3,20 @@ import { Card, StatCard } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { EditHackathonForm } from './EditHackathonForm';
 
-export default async function HackathonOverviewPage({ params }: { params: { id: string } }) {
+export default async function HackathonOverviewPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
   if (!hackathon) notFound();
 
   const { data: stats } = await supabase
     .from('hackathon_dashboard_stats')
     .select('*')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .maybeSingle();
 
   return (

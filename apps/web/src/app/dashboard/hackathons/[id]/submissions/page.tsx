@@ -14,27 +14,29 @@ export default async function SubmissionsListPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { status?: string; track?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ status?: string; track?: string }>;
 }) {
+  const { id } = await params;
+  const filters = await searchParams;
   const { supabase } = await getCurrentUserOrRedirect();
 
   const { data: tracks } = await supabase
     .from('hackathon_tracks')
     .select('id, name')
-    .eq('hackathon_id', params.id);
+    .eq('hackathon_id', id);
 
   let query = supabase
     .from('submissions')
     .select('id, title, status, submitted_at, updated_at, teams(name), hackathon_tracks(name, id)')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('updated_at', { ascending: false });
 
-  if (searchParams.status && searchParams.status !== 'all') {
-    query = query.eq('status', searchParams.status);
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
   }
-  if (searchParams.track && searchParams.track !== 'all') {
-    query = query.eq('track_id', searchParams.track);
+  if (filters.track && filters.track !== 'all') {
+    query = query.eq('track_id', filters.track);
   }
 
   const { data: submissions } = await query;
@@ -48,8 +50,8 @@ export default async function SubmissionsListPage({
 
       <SubmissionsFilters
         tracks={tracks ?? []}
-        status={searchParams.status ?? 'all'}
-        track={searchParams.track ?? 'all'}
+        status={filters.status ?? 'all'}
+        track={filters.track ?? 'all'}
       />
 
       {list.length === 0 ? (
@@ -69,7 +71,7 @@ export default async function SubmissionsListPage({
             {list.map((s: any) => (
               <Tr key={s.id}>
                 <Td>
-                  <Link href={`/dashboard/hackathons/${params.id}/submissions/${s.id}`}>
+                  <Link href={`/dashboard/hackathons/${id}/submissions/${s.id}`}>
                     <strong>{s.title}</strong>
                   </Link>
                 </Td>

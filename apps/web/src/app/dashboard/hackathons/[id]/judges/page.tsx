@@ -2,12 +2,13 @@ import { Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/components/
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { AssignJudgeForm, RemoveJudgeButton } from './client';
 
-export default async function JudgesPage({ params }: { params: { id: string } }) {
+export default async function JudgesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: assignments } = await supabase
     .from('judge_assignments')
     .select('id, submission_id, profiles(id, full_name, email)')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .is('submission_id', null);
 
   return (
@@ -20,7 +21,7 @@ export default async function JudgesPage({ params }: { params: { id: string } })
           The judge must already have a Hackatone account (any sign-up works). They&apos;ll score every
           submission in this hackathon.
         </p>
-        <AssignJudgeForm hackathonId={params.id} />
+        <AssignJudgeForm hackathonId={id} />
       </Card>
 
       {(assignments?.length ?? 0) === 0 ? (
@@ -39,7 +40,7 @@ export default async function JudgesPage({ params }: { params: { id: string } })
               <Tr key={a.id}>
                 <Td><strong>{a.profiles?.full_name ?? '—'}</strong></Td>
                 <Td>{a.profiles?.email ?? '—'}</Td>
-                <Td><RemoveJudgeButton hackathonId={params.id} assignmentId={a.id} /></Td>
+                <Td><RemoveJudgeButton hackathonId={id} assignmentId={a.id} /></Td>
               </Tr>
             ))}
           </Tbody>

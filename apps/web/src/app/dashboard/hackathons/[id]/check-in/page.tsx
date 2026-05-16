@@ -2,13 +2,14 @@ import { Card, CardTitle } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { TokenForm, ManualList } from './CheckInPanel';
 
-export default async function CheckInPage({ params }: { params: { id: string } }) {
+export default async function CheckInPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
 
   const { data: accepted } = await supabase
     .from('registrations')
     .select('id, full_name, email, organization_or_company, checked_in_at')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .eq('status', 'accepted')
     .order('full_name', { ascending: true });
 
@@ -28,7 +29,7 @@ export default async function CheckInPage({ params }: { params: { id: string } }
             Paste the participant&apos;s QR token (from their mobile app). A full camera scanner can be
             added later — the participant&apos;s app shows the token under their QR for easy testing.
           </p>
-          <TokenForm hackathonId={params.id} />
+          <TokenForm hackathonId={id} />
         </Card>
 
         <Card>
@@ -36,7 +37,7 @@ export default async function CheckInPage({ params }: { params: { id: string } }
           <p style={{ color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
             Search by name, email, or company.
           </p>
-          <ManualList hackathonId={params.id} accepted={accepted ?? []} />
+          <ManualList hackathonId={id} accepted={accepted ?? []} />
         </Card>
       </div>
     </div>

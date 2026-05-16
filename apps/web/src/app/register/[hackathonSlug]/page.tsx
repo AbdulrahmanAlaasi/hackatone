@@ -6,15 +6,16 @@ import { RegistrationForm } from './RegistrationForm';
 export default async function PublicRegistrationPage({
   params,
 }: {
-  params: { hackathonSlug: string };
+  params: Promise<{ hackathonSlug: string }>;
 }) {
-  const supabase = createSupabaseServerClient();
+  const { hackathonSlug } = await params;
+  const supabase = await createSupabaseServerClient();
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select(
       'id, title, description, location, starts_at, ends_at, registration_deadline, status, min_team_size, max_team_size',
     )
-    .eq('slug', params.hackathonSlug)
+    .eq('slug', hackathonSlug)
     .maybeSingle();
 
   if (!hackathon) notFound();
@@ -85,7 +86,7 @@ export default async function PublicRegistrationPage({
             </p>
             <RegistrationForm
               hackathonId={hackathon.id}
-              hackathonSlug={params.hackathonSlug}
+              hackathonSlug={hackathonSlug}
               hackathonTitle={hackathon.title}
               tracks={tracks ?? []}
             />

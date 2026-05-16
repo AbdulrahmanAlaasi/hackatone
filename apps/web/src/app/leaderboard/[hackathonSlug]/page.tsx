@@ -7,13 +7,14 @@ export const dynamic = 'force-dynamic';
 export default async function PublicLeaderboardPage({
   params,
 }: {
-  params: { hackathonSlug: string };
+  params: Promise<{ hackathonSlug: string }>;
 }) {
-  const supabase = createSupabaseServerClient();
+  const { hackathonSlug } = await params;
+  const supabase = await createSupabaseServerClient();
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('id, title, slug, leaderboard_published')
-    .eq('slug', params.hackathonSlug)
+    .eq('slug', hackathonSlug)
     .maybeSingle();
   if (!hackathon) notFound();
 

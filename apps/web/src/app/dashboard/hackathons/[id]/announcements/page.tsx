@@ -2,12 +2,13 @@ import { Card, EmptyState } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { AnnouncementForm } from './AnnouncementForm';
 
-export default async function AnnouncementsPage({ params }: { params: { id: string } }) {
+export default async function AnnouncementsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: announcements } = await supabase
     .from('announcements')
     .select('id, title, body, created_at')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('created_at', { ascending: false });
 
   return (
@@ -19,7 +20,7 @@ export default async function AnnouncementsPage({ params }: { params: { id: stri
         <p style={{ color: 'var(--color-text-muted)' }}>
           Visible to accepted participants in the mobile app.
         </p>
-        <AnnouncementForm hackathonId={params.id} />
+        <AnnouncementForm hackathonId={id} />
       </Card>
 
       {(announcements?.length ?? 0) === 0 ? (

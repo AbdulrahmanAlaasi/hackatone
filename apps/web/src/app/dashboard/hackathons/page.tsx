@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 // Full CRUD lands in Prompt 4. This shell renders the list view.
 export default async function HackathonsListPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: hackathons } = await supabase
     .from('hackathons')
     .select('id, title, slug, status, starts_at, ends_at')

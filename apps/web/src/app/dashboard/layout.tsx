@@ -12,7 +12,7 @@ const NAV = [
 ];
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

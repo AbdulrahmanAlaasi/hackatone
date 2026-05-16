@@ -8,16 +8,17 @@ import { RowActions } from '../RowActions';
 export default async function ParticipantDetailPage({
   params,
 }: {
-  params: { id: string; regId: string };
+  params: Promise<{ id: string; regId: string }>;
 }) {
+  const { id, regId } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: reg } = await supabase
     .from('registrations')
     .select(
       'id, full_name, email, phone, organization_or_company, major_or_job_title, skill_level, skills, github_url, portfolio_url, team_preference, status, decision_note, decided_at, checked_in_at, qr_token, created_at, hackathon_tracks(name)',
     )
-    .eq('id', params.regId)
-    .eq('hackathon_id', params.id)
+    .eq('id', regId)
+    .eq('hackathon_id', id)
     .maybeSingle();
 
   if (!reg) notFound();
@@ -27,7 +28,7 @@ export default async function ParticipantDetailPage({
   return (
     <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)' }}>
       <Card>
-        <Link href={`/dashboard/hackathons/${params.id}/participants`} style={{ fontSize: 'var(--font-size-caption)' }}>
+        <Link href={`/dashboard/hackathons/${id}/participants`} style={{ fontSize: 'var(--font-size-caption)' }}>
           ← All participants
         </Link>
         <h2 style={{ margin: '8px 0 12px', fontSize: 'var(--font-size-h2)', fontWeight: 800 }}>{reg.full_name}</h2>
@@ -56,7 +57,7 @@ export default async function ParticipantDetailPage({
         <CardTitle>Actions</CardTitle>
         <div style={{ marginTop: 'var(--space-3)' }}>
           <RowActions
-            hackathonId={params.id}
+            hackathonId={id}
             registrationId={reg.id}
             status={reg.status as any}
             checkedIn={!!reg.checked_in_at}

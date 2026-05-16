@@ -24,13 +24,14 @@ export default async function HackathonLayout({
   params,
 }: {
   children: ReactNode;
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('id, title, slug, status, starts_at, ends_at')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (!hackathon) notFound();
@@ -49,7 +50,7 @@ export default async function HackathonLayout({
       />
       <nav className={styles.tabs}>
         {TABS.map((t) => (
-          <Link key={t.href} href={`/dashboard/hackathons/${params.id}${t.href}`} className={styles.tab}>
+          <Link key={t.href} href={`/dashboard/hackathons/${id}${t.href}`} className={styles.tab}>
             {t.label}
           </Link>
         ))}

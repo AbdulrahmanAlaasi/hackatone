@@ -2,19 +2,20 @@ import { Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/components/
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { TracksEditor, DeleteTrackButton } from './TracksEditor';
 
-export default async function TracksPage({ params }: { params: { id: string } }) {
+export default async function TracksPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: tracks } = await supabase
     .from('hackathon_tracks')
     .select('id, name, description, created_at')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('created_at', { ascending: true });
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-6)' }}>
       <Card>
         <h2 style={{ marginTop: 0, fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>Add a track</h2>
-        <TracksEditor hackathonId={params.id} />
+        <TracksEditor hackathonId={id} />
       </Card>
 
       {(tracks?.length ?? 0) === 0 ? (
@@ -34,7 +35,7 @@ export default async function TracksPage({ params }: { params: { id: string } })
                 <Td><strong>{t.name}</strong></Td>
                 <Td>{t.description ?? '—'}</Td>
                 <Td>
-                  <DeleteTrackButton hackathonId={params.id} trackId={t.id} />
+                  <DeleteTrackButton hackathonId={id} trackId={t.id} />
                 </Td>
               </Tr>
             ))}

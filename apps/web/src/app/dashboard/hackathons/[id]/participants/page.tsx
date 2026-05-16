@@ -16,9 +16,11 @@ export default async function ParticipantsPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { status?: string; q?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
+  const { id } = await params;
+  const filters = await searchParams;
   const { supabase } = await getCurrentUserOrRedirect();
 
   let query = supabase
@@ -26,14 +28,14 @@ export default async function ParticipantsPage({
     .select(
       'id, full_name, email, status, created_at, checked_in_at, organization_or_company',
     )
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('created_at', { ascending: false });
 
-  if (searchParams.status && searchParams.status !== 'all') {
-    query = query.eq('status', searchParams.status);
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
   }
-  if (searchParams.q) {
-    const q = `%${searchParams.q}%`;
+  if (filters.q) {
+    const q = `%${filters.q}%`;
     query = query.or(`full_name.ilike.${q},email.ilike.${q},organization_or_company.ilike.${q}`);
   }
 
@@ -44,7 +46,7 @@ export default async function ParticipantsPage({
   const { data: all } = await supabase
     .from('registrations')
     .select('status')
-    .eq('hackathon_id', params.id);
+    .eq('hackathon_id', id);
   const counts = (all ?? []).reduce(
     (acc, r) => {
       acc[r.status] = (acc[r.status] ?? 0) + 1;
@@ -61,7 +63,7 @@ export default async function ParticipantsPage({
         rejected
       </Card>
 
-      <ParticipantsFilters status={searchParams.status ?? 'all'} q={searchParams.q ?? ''} />
+      <ParticipantsFilters status={filters.status ?? 'all'} q={filters.q ?? ''} />
 
       {list.length === 0 ? (
         <EmptyState title="No matches" body="Try clearing the filters or share the public registration link." />
@@ -81,7 +83,7 @@ export default async function ParticipantsPage({
             {list.map((r) => (
               <Tr key={r.id}>
                 <Td>
-                  <Link href={`/dashboard/hackathons/${params.id}/participants/${r.id}`}>
+                  <Link href={`/dashboard/hackathons/${id}/participants/${r.id}`}>
                     <strong>{r.full_name}</strong>
                   </Link>
                 </Td>
@@ -93,7 +95,7 @@ export default async function ParticipantsPage({
                 <Td>{r.checked_in_at ? new Date(r.checked_in_at).toLocaleString() : '—'}</Td>
                 <Td>
                   <RowActions
-                    hackathonId={params.id}
+                    hackathonId={id}
                     registrationId={r.id}
                     status={r.status as any}
                     checkedIn={!!r.checked_in_at}

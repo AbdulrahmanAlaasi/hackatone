@@ -2,25 +2,26 @@ import Link from 'next/link';
 import { Badge, Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 
-export default async function ScoringIndexPage({ params }: { params: { id: string } }) {
+export default async function ScoringIndexPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase, user } = await getCurrentUserOrRedirect();
 
   // Show all submitted projects + how many criteria the current judge has scored
   const { data: submissions } = await supabase
     .from('submissions')
     .select('id, title, status, teams(name)')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .in('status', ['submitted', 'locked']);
 
   const { data: criteria } = await supabase
     .from('judging_criteria')
     .select('id')
-    .eq('hackathon_id', params.id);
+    .eq('hackathon_id', id);
 
   const { data: myScores } = await supabase
     .from('scores')
     .select('submission_id, criteria_id')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .eq('judge_id', user.id);
 
   const totalCriteria = criteria?.length ?? 0;
@@ -64,7 +65,7 @@ export default async function ScoringIndexPage({ params }: { params: { id: strin
                     </Badge>
                   </Td>
                   <Td>
-                    <Link href={`/dashboard/hackathons/${params.id}/scoring/${s.id}`}>Score →</Link>
+                    <Link href={`/dashboard/hackathons/${id}/scoring/${s.id}`}>Score →</Link>
                   </Td>
                 </Tr>
               );

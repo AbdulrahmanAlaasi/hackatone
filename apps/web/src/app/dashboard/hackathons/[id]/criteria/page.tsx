@@ -2,18 +2,19 @@ import { Card, EmptyState } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
 import { CriteriaEditor } from './CriteriaEditor';
 
-export default async function CriteriaPage({ params }: { params: { id: string } }) {
+export default async function CriteriaPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: criteria } = await supabase
     .from('judging_criteria')
     .select('id, name, description, weight, sort_order')
-    .eq('hackathon_id', params.id)
+    .eq('hackathon_id', id)
     .order('sort_order', { ascending: true });
 
   const { data: hackathon } = await supabase
     .from('hackathons')
     .select('score_min, score_max')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   return (
@@ -27,7 +28,7 @@ export default async function CriteriaPage({ params }: { params: { id: string } 
         <EmptyState title="No criteria yet" body="Add at least one criterion before judging starts." />
       ) : null}
 
-      <CriteriaEditor hackathonId={params.id} criteria={criteria ?? []} />
+      <CriteriaEditor hackathonId={id} criteria={criteria ?? []} />
     </div>
   );
 }

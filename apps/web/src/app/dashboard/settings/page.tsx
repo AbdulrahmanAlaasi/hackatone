@@ -2,7 +2,7 @@ import { Card, CardBody, CardTitle, TopHeader } from '@/components/ui';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export default async function SettingsPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

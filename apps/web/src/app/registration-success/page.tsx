@@ -1,10 +1,11 @@
 import { Card, Container } from '@/components/ui';
 
-export default function RegistrationSuccessPage({
+export default async function RegistrationSuccessPage({
   searchParams,
 }: {
-  searchParams: { hackathon?: string };
+  searchParams: Promise<{ hackathon?: string }>;
 }) {
+  const { hackathon } = await searchParams;
   return (
     <main style={{ padding: '64px 0' }}>
       <Container size="form">
@@ -13,7 +14,7 @@ export default function RegistrationSuccessPage({
             You&apos;re registered 🎉
           </h1>
           <p style={{ color: 'var(--color-text)', fontSize: 'var(--font-size-body-lg)' }}>
-            We received your registration{searchParams.hackathon ? ` for ${searchParams.hackathon}` : ''}.
+            We received your registration{hackathon ? ` for ${hackathon}` : ''}.
             The organizers will review it and let you know.
           </p>
           <h2 style={{ fontSize: 'var(--font-size-h3)', marginTop: 'var(--space-6)' }}>

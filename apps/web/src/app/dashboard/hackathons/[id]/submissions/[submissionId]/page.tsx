@@ -6,16 +6,17 @@ import { getCurrentUserOrRedirect } from '@/lib/auth';
 export default async function SubmissionDetailPage({
   params,
 }: {
-  params: { id: string; submissionId: string };
+  params: Promise<{ id: string; submissionId: string }>;
 }) {
+  const { id, submissionId } = await params;
   const { supabase } = await getCurrentUserOrRedirect();
   const { data: sub } = await supabase
     .from('submissions')
     .select(
       'id, title, description, status, submitted_at, github_url, demo_url, presentation_url, video_url, screenshot_urls, teams(id, name, team_members(profiles(full_name, email))), hackathon_tracks(name)',
     )
-    .eq('id', params.submissionId)
-    .eq('hackathon_id', params.id)
+    .eq('id', submissionId)
+    .eq('hackathon_id', id)
     .maybeSingle();
 
   if (!sub) notFound();
@@ -28,7 +29,7 @@ export default async function SubmissionDetailPage({
     <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)' }}>
       <Card>
         <Link
-          href={`/dashboard/hackathons/${params.id}/submissions`}
+          href={`/dashboard/hackathons/${id}/submissions`}
           style={{ fontSize: 'var(--font-size-caption)' }}
         >
           ← All submissions

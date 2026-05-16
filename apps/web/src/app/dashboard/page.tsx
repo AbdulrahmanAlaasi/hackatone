@@ -3,7 +3,7 @@ import { Card, CardBody, CardTitle, StatCard, TopHeader } from '@/components/ui'
 import Link from 'next/link';
 
 export default async function DashboardOverviewPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   // Note: hackathons RLS restricts to org members, so users with no org see nothing.
   const { data: hackathons } = await supabase
