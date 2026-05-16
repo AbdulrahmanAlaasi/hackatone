@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
-import { Badge, Button, Card, H1, H2, Muted, P, Screen } from '../../../src/components/ui';
+import { Badge, Card, Display, Eyebrow, H3, Hero, Muted, P } from '../../../src/components/ui';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { tokens } from '../../../src/theme';
@@ -45,9 +45,9 @@ export default function MyQrScreen() {
   if (!data) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
-        <Screen>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Muted>Loading…</Muted>
-        </Screen>
+        </View>
       </SafeAreaView>
     );
   }
@@ -56,31 +56,41 @@ export default function MyQrScreen() {
 
   if (!registration || registration.status !== 'accepted') {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
-        <Screen>
-          <Button title="← Back" variant="text" onPress={() => router.back()} />
-          <H1>QR not available</H1>
-          <Card>
+      <View style={{ flex: 1, backgroundColor: tokens.color.background }}>
+        <Hero tone="peach" height={200}>
+          <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
+            <Pressable onPress={() => router.back()} hitSlop={20}>
+              <P style={{ fontWeight: '800' }}>← Back</P>
+            </Pressable>
+            <Display style={{ marginTop: tokens.space[5] }}>QR not available</Display>
+          </SafeAreaView>
+        </Hero>
+        <View style={{ padding: tokens.space[4] }}>
+          <Card tone="cream">
             <P>
-              Your registration must be accepted before you can show your QR code. Current status:{' '}
-              <Muted>{registration?.status ?? 'not registered'}</Muted>
+              Your registration must be accepted before you can show your QR code.
+              {'\n'}Current status: <Muted>{registration?.status ?? 'not registered'}</Muted>
             </P>
           </Card>
-        </Screen>
-      </SafeAreaView>
+        </View>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
-      <Screen>
-        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-          <Button title="← Back" variant="text" onPress={() => router.back()} />
-          <H1>My QR</H1>
-          <Muted style={{ marginBottom: tokens.space[5] }}>
-            Show this to the organizer at check-in.
-          </Muted>
+    <View style={{ flex: 1, backgroundColor: tokens.color.background }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 64 }} showsVerticalScrollIndicator={false}>
+        <Hero tone="sunrise" height={200}>
+          <SafeAreaView edges={['top']} style={{ backgroundColor: 'transparent' }}>
+            <Pressable onPress={() => router.back()} hitSlop={20}>
+              <P style={{ color: '#fff', fontWeight: '800' }}>← Back</P>
+            </Pressable>
+            <Eyebrow style={{ color: '#fff', opacity: 0.9, marginTop: tokens.space[5] }}>Show at check-in</Eyebrow>
+            <Display style={{ color: '#fff', marginTop: 4 }}>My QR</Display>
+          </SafeAreaView>
+        </Hero>
 
+        <View style={{ paddingHorizontal: tokens.space[4], marginTop: -28 }}>
           <Card style={{ alignItems: 'center', padding: tokens.space[6] }}>
             <View
               style={{
@@ -91,30 +101,32 @@ export default function MyQrScreen() {
             >
               <QRCode value={registration.qr_token} size={240} color={tokens.color.text} />
             </View>
-            <H2 style={{ marginTop: tokens.space[5], textAlign: 'center' }}>{registration.full_name}</H2>
+            <H3 style={{ marginTop: tokens.space[5], textAlign: 'center', fontSize: 22 }}>
+              {registration.full_name}
+            </H3>
             <Muted style={{ textAlign: 'center' }}>{hackathon?.title}</Muted>
-            {team ? <Badge tone="info" style={{ marginTop: tokens.space[2] }}>Team: {team.name}</Badge> : null}
-            {registration.checked_in_at ? (
-              <Badge tone="success" style={{ marginTop: tokens.space[2] }}>Already checked in</Badge>
-            ) : null}
+            <View style={{ flexDirection: 'row', gap: tokens.space[2], marginTop: tokens.space[3] }}>
+              {team ? <Badge tone="info">Team: {team.name}</Badge> : null}
+              {registration.checked_in_at ? <Badge tone="success">✓ Checked in</Badge> : null}
+            </View>
           </Card>
 
-          <Card style={{ marginTop: tokens.space[4] }}>
-            <Muted>Token (for manual entry):</Muted>
+          <Card style={{ marginTop: tokens.space[3] }}>
+            <Muted style={{ fontWeight: '700' }}>Token (manual entry):</Muted>
             <P
               selectable
               style={{
                 fontFamily: 'Courier',
                 fontSize: 12,
-                color: tokens.color.text,
+                color: tokens.color.textMuted,
                 marginTop: tokens.space[2],
               }}
             >
               {registration.qr_token}
             </P>
           </Card>
-        </ScrollView>
-      </Screen>
-    </SafeAreaView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
