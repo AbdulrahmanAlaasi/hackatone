@@ -20,9 +20,11 @@ function greeting() {
 }
 
 function firstName(email: string | undefined, fullName: string | null | undefined) {
-  if (fullName) return fullName.split(' ')[0];
+  if (fullName) return fullName.split(' ')[0] ?? 'there';
   if (!email) return 'there';
-  return email.split('@')[0].split('.')[0].replace(/^\w/, (c) => c.toUpperCase());
+  const local = email.split('@')[0] ?? email;
+  const stem = local.split('.')[0] ?? local;
+  return stem.replace(/^\w/, (c) => c.toUpperCase());
 }
 
 export default async function DashboardOverviewPage() {
