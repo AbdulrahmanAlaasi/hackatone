@@ -12,6 +12,7 @@ const TABS = [
   { href: '/judges', label: 'Judges' },
   { href: '/scoring', label: 'Scoring' },
   { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/announcements', label: 'Announcements' },
   { href: '/tracks', label: 'Tracks' },
   { href: '/criteria', label: 'Judging criteria' },
   { href: '/qr-codes', label: 'QR & registration' },

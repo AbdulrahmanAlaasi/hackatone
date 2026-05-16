@@ -92,6 +92,8 @@ export default function HackathonDetailScreen() {
                 <Button title="Show my QR" onPress={() => router.push(`/hackathon/${hackathon.id}/qr`)} />
                 <Button title="Team" variant="secondary" onPress={() => router.push(`/hackathon/${hackathon.id}/team`)} />
                 <Button title="Submission" variant="secondary" onPress={() => router.push(`/hackathon/${hackathon.id}/submission`)} />
+                <Button title="Chat" variant="secondary" onPress={() => router.push(`/hackathon/${hackathon.id}/chat`)} />
+                <Button title="Results" variant="secondary" onPress={() => router.push(`/hackathon/${hackathon.id}/results`)} />
               </View>
             </Card>
           ) : registration?.status === 'pending' ? (
