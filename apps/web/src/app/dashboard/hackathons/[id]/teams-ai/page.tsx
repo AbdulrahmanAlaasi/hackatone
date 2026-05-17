@@ -21,9 +21,7 @@ export default async function AiTeamsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  // Auth check — ensure user is logged in
   await getCurrentUserOrRedirect();
-  // Service client bypasses RLS so we can read other users' profile AI data
   const svc = createSupabaseServiceClient();
 
   const { data: hackathon } = await svc
@@ -32,26 +30,43 @@ export default async function AiTeamsPage({
     .eq('id', id)
     .maybeSingle();
 
-  const { data: rows } = await svc
+  // Step 1: fetch accepted registrations that have a linked user account
+  const { data: regs } = await svc
     .from('registrations')
-    .select('id, user_id, full_name, email, profiles(ai_level, ai_skills, ai_strengths, ai_summary, ai_analyzed_at)')
+    .select('id, user_id, full_name, email')
     .eq('hackathon_id', id)
-    .eq('status', 'accepted');
+    .eq('status', 'accepted')
+    .not('user_id', 'is', null);
 
-  // Only include rows with a linked user account (user_id required to assign teams)
-  const participants: AcceptedParticipant[] = (rows ?? [])
-    .filter((r: any) => !!r.user_id)
-    .map((r: any) => ({
+  const regList = regs ?? [];
+
+  // Step 2: fetch AI profile data separately for those user ids
+  const userIds = regList.map((r: any) => r.user_id as string);
+  let profileMap: Record<string, any> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await svc
+      .from('profiles')
+      .select('id, ai_level, ai_skills, ai_strengths, ai_summary, ai_analyzed_at')
+      .in('id', userIds);
+    for (const p of profiles ?? []) {
+      profileMap[p.id] = p;
+    }
+  }
+
+  const participants: AcceptedParticipant[] = regList.map((r: any) => {
+    const p = profileMap[r.user_id] ?? {};
+    return {
       registration_id: r.id,
       user_id: r.user_id,
       full_name: r.full_name,
       email: r.email,
-      ai_level: r.profiles?.ai_level ?? null,
-      ai_skills: r.profiles?.ai_skills ?? [],
-      ai_strengths: r.profiles?.ai_strengths ?? [],
-      ai_summary: r.profiles?.ai_summary ?? null,
-      ai_analyzed_at: r.profiles?.ai_analyzed_at ?? null,
-    }));
+      ai_level: p.ai_level ?? null,
+      ai_skills: p.ai_skills ?? [],
+      ai_strengths: p.ai_strengths ?? [],
+      ai_summary: p.ai_summary ?? null,
+      ai_analyzed_at: p.ai_analyzed_at ?? null,
+    };
+  });
 
   const analyzed = participants.filter((p) => p.ai_level).length;
 
