@@ -13,22 +13,46 @@ function base64ToUint8Array(b64: string): Uint8Array {
 }
 
 /**
- * Schedule background work on Cloudflare via `ctx.waitUntil` if available,
- * otherwise fall through (Node dev server / other runtimes). The promise will
- * still run; on Workers, this keeps the isolate alive past the response.
+ * Direct REST call to Supabase GoTrue admin endpoint to create a user.
+ * Avoids the supabase-js admin SDK which has been flaky on Cloudflare edge.
  */
+async function createAuthUser(email: string, password: string, fullName: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const r = await fetch(`${url}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName },
+    }),
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    return { ok: false as const, error: `auth/${r.status}: ${txt.slice(0, 200)}` };
+  }
+  const j = (await r.json()) as { id?: string };
+  if (!j.id) return { ok: false as const, error: 'No user id returned' };
+  return { ok: true as const, userId: j.id };
+}
+
 async function scheduleBackground(p: Promise<unknown>) {
   try {
-    const mod = await import('@cloudflare/next-on-pages');
-    const ctx = (mod as any).getRequestContext?.();
+    const mod: any = await import('@cloudflare/next-on-pages').catch(() => null);
+    const ctx = mod?.getRequestContext?.();
     if (ctx?.ctx?.waitUntil) {
       ctx.ctx.waitUntil(p);
       return;
     }
   } catch {
-    /* not on Cloudflare — fall through */
+    /* not on Cloudflare */
   }
-  // Best-effort fire-and-forget (locally fine; on workers the response may already be sent)
   p.catch((err) => console.error('[scheduleBackground]', err));
 }
 
@@ -49,22 +73,17 @@ export interface RegisterInput {
 }
 
 /**
- * Fast registration: auth user + CV upload + DB inserts only.
- * Returns success in a few seconds so the participant sees the success page quickly.
- *
- * The Claude Haiku CV analysis is scheduled in the background via `ctx.waitUntil`
- * so it finishes after the response is sent.
+ * Lean registration: creates account + inserts registration row, then schedules
+ * CV upload + AI analysis in the background. Returns in 2-5 seconds.
  */
 export async function submitRegistration(input: RegisterInput, cvDataUrl: string) {
   const svc = createSupabaseServiceClient();
 
-  // ------------------------------------------------------------
-  // 1. Create or look up the auth user (fast path)
-  // ------------------------------------------------------------
+  // ----------------------------------------------------------
+  // 1. Resolve user (existing by email, or create new)
+  // ----------------------------------------------------------
   let userId: string | null = null;
 
-  // Fast path: look up the existing user via the indexed `profiles` table
-  // (auto-created on auth signup). Avoids paging through auth.admin.listUsers.
   const { data: existingProfile } = await svc
     .from('profiles')
     .select('id')
@@ -74,102 +93,105 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
   if (existingProfile?.id) {
     userId = existingProfile.id;
   } else {
-    const { data: created, error: createErr } = await svc.auth.admin.createUser({
-      email: input.email,
-      password: input.password,
-      email_confirm: true,
-      user_metadata: { full_name: input.fullName },
-    });
-    if (created?.user) {
-      userId = created.user.id;
-    } else if (createErr) {
-      // Edge case: race condition where another request created the user just now.
-      // Re-read profiles once.
-      const { data: again } = await svc.from('profiles').select('id').ilike('email', input.email).maybeSingle();
-      userId = again?.id ?? null;
-      if (!userId) return { ok: false as const, error: createErr.message };
+    const created = await createAuthUser(input.email, input.password, input.fullName);
+    if (!created.ok) {
+      // If it's a "user already registered" race, try profile lookup once more
+      if (created.error.toLowerCase().includes('already')) {
+        const { data: again } = await svc.from('profiles').select('id').ilike('email', input.email).maybeSingle();
+        userId = again?.id ?? null;
+      }
+      if (!userId) return { ok: false as const, error: created.error };
+    } else {
+      userId = created.userId;
     }
   }
   if (!userId) return { ok: false as const, error: 'No user id resolved' };
 
-  // ------------------------------------------------------------
-  // 2. Upload the CV to private bucket as `<userId>/cv.pdf`
-  // ------------------------------------------------------------
-  const match = cvDataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return { ok: false as const, error: 'Invalid CV upload' };
-  const contentType = match[1]!;
-  const base64Body = match[2]!;
-  const cvBytes = base64ToUint8Array(base64Body);
-  const path = `${userId}/cv.pdf`;
+  // ----------------------------------------------------------
+  // 2. Insert registration row IMMEDIATELY (so it's saved even
+  //    if the CV upload or AI fails)
+  // ----------------------------------------------------------
+  const { error: regErr } = await svc.from('registrations').insert({
+    hackathon_id: input.hackathonId,
+    user_id: userId,
+    full_name: input.fullName,
+    email: input.email,
+    phone: input.phone,
+    organization_or_company: input.organizationOrCompany,
+    major_or_job_title: input.majorOrJobTitle,
+    skill_level: input.skillLevel,
+    skills: input.skills,
+    preferred_track_id: input.preferredTrackId,
+    github_url: input.githubUrl,
+    team_preference: input.teamPreference,
+    status: 'pending',
+  });
+  if (regErr) {
+    if (regErr.code === '23505') {
+      return { ok: false as const, error: 'You are already registered for this hackathon.' };
+    }
+    return { ok: false as const, error: regErr.message };
+  }
 
-  const { error: uploadErr } = await svc.storage
-    .from('cvs')
-    .upload(path, cvBytes, { contentType, upsert: true });
-  if (uploadErr) return { ok: false as const, error: `CV upload failed: ${uploadErr.message}` };
-
-  const { data: signed } = await svc.storage.from('cvs').createSignedUrl(path, 60 * 60 * 24 * 365);
-  const cvUrl = signed?.signedUrl ?? null;
-
-  // ------------------------------------------------------------
-  // 3. Update profile + insert registration (parallel)
-  // ------------------------------------------------------------
-  const [profileRes, regRes] = await Promise.all([
-    svc
-      .from('profiles')
-      .update({
-        cv_url: cvUrl,
-        phone: input.phone,
-        organization_or_company: input.organizationOrCompany,
-        major_or_job_title: input.majorOrJobTitle,
-        skill_level: input.skillLevel,
-        skills: input.skills,
-        github_url: input.githubUrl,
-      })
-      .eq('id', userId),
-    svc.from('registrations').insert({
-      hackathon_id: input.hackathonId,
-      user_id: userId,
-      full_name: input.fullName,
-      email: input.email,
+  // ----------------------------------------------------------
+  // 3. Update profile fields (non-blocking — non-critical)
+  // ----------------------------------------------------------
+  await svc
+    .from('profiles')
+    .update({
       phone: input.phone,
       organization_or_company: input.organizationOrCompany,
       major_or_job_title: input.majorOrJobTitle,
       skill_level: input.skillLevel,
       skills: input.skills,
-      preferred_track_id: input.preferredTrackId,
       github_url: input.githubUrl,
-      team_preference: input.teamPreference,
-      status: 'pending',
-    }),
-  ]);
+    })
+    .eq('id', userId);
 
-  if (regRes.error) {
-    if (regRes.error.code === '23505') {
-      return { ok: false as const, error: 'This email is already registered for this hackathon.' };
-    }
-    return { ok: false as const, error: regRes.error.message };
-  }
-  // profileRes errors are non-fatal — registration still succeeded
-  if (profileRes.error) console.warn('[register] profile update warning:', profileRes.error.message);
-
-  // ------------------------------------------------------------
-  // 4. Schedule the CV analysis in the BACKGROUND
-  //    The response returns immediately; Claude Haiku runs after.
-  // ------------------------------------------------------------
-  if (cvUrl) {
-    await scheduleBackground(analyzeCv(userId, cvUrl));
-  }
+  // ----------------------------------------------------------
+  // 4. CV upload + AI analysis happen in the BACKGROUND.
+  //    Even if the worker dies after the response, the success
+  //    page's polling will re-trigger analysis via the cv_url.
+  // ----------------------------------------------------------
+  scheduleBackground(uploadAndAnalyze(userId, cvDataUrl));
 
   return { ok: true as const };
 }
 
 /**
- * Allow the success page to poll for analysis completion / re-trigger if needed.
+ * Background task: parse CV data URL → upload to storage → analyze with Claude.
+ * Best-effort. If it fails, the success page polling will retry analysis.
  */
+async function uploadAndAnalyze(userId: string, cvDataUrl: string) {
+  try {
+    const svc = createSupabaseServiceClient();
+    const match = cvDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return;
+    const contentType = match[1]!;
+    const base64Body = match[2]!;
+    const cvBytes = base64ToUint8Array(base64Body);
+    const path = `${userId}/cv.pdf`;
+
+    const { error: uploadErr } = await svc.storage
+      .from('cvs')
+      .upload(path, cvBytes, { contentType, upsert: true });
+    if (uploadErr) {
+      console.error('[uploadAndAnalyze] upload', uploadErr.message);
+      return;
+    }
+
+    const { data: signed } = await svc.storage.from('cvs').createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (!signed?.signedUrl) return;
+
+    await svc.from('profiles').update({ cv_url: signed.signedUrl }).eq('id', userId);
+    await analyzeCv(userId, signed.signedUrl);
+  } catch (err) {
+    console.error('[uploadAndAnalyze] error', err);
+  }
+}
+
 /**
  * Register an existing Hackatone user (account already created elsewhere).
- * No password needed, no CV upload — just attach the registration to their user.
- * If the account doesn't exist, returns an error so the form can switch to the new-account flow.
  */
 export async function registerExistingUser(input: {
   hackathonId: string;
@@ -182,7 +204,6 @@ export async function registerExistingUser(input: {
   teamPreference?: string | null;
 }) {
   const svc = createSupabaseServiceClient();
-  // Fast indexed lookup via profiles
   const { data: existing } = await svc
     .from('profiles')
     .select('id')
@@ -219,7 +240,6 @@ export async function registerExistingUser(input: {
 
 export async function getAnalysisStatus(email: string) {
   const svc = createSupabaseServiceClient();
-  // Direct indexed lookup — fast.
   const { data: p } = await svc
     .from('profiles')
     .select('id, cv_url, ai_level, ai_skills, ai_summary, ai_analyzed_at')
@@ -234,9 +254,8 @@ export async function getAnalysisStatus(email: string) {
       summary: p.ai_summary,
     };
   }
-  // If no analysis after a while and CV exists, re-kick
   if (p.cv_url) {
-    await scheduleBackground(analyzeCv(p.id, p.cv_url));
+    scheduleBackground(analyzeCv(p.id, p.cv_url));
     return { state: 'pending' as const };
   }
   return { state: 'no_cv' as const };

@@ -119,8 +119,10 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
     }
 
     setLoading(true);
-    const cvDataUrl = await fileToDataUrl(cvFile);
-    const res = await submitRegistration(
+    let res: { ok: true } | { ok: false; error: string };
+    try {
+      const cvDataUrl = await fileToDataUrl(cvFile);
+      res = await submitRegistration(
       {
         hackathonId,
         hackathonSlug,
@@ -140,6 +142,15 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       },
       cvDataUrl,
     );
+    } catch (err: any) {
+      setLoading(false);
+      setError(
+        err?.message
+          ? `Something went wrong: ${err.message}. Please try again.`
+          : 'Something went wrong submitting your registration. Please try again.',
+      );
+      return;
+    }
     setLoading(false);
 
     if (!res.ok) {
