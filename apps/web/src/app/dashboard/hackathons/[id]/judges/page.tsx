@@ -1,13 +1,16 @@
 import { Card, EmptyState, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
-import { AssignJudgeForm, RemoveJudgeButton } from './client';
+import { createSupabaseServiceClient } from '@/lib/supabase/server';
+import { InviteJudgeForm, RemoveJudgeButton } from './client';
 
 export default async function JudgesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase } = await getCurrentUserOrRedirect();
-  const { data: assignments } = await supabase
+  await getCurrentUserOrRedirect();
+  const svc = createSupabaseServiceClient();
+
+  const { data: assignments } = await svc
     .from('judge_assignments')
-    .select('id, submission_id, profiles(id, full_name, email)')
+    .select('id, profiles(id, full_name, email)')
     .eq('hackathon_id', id)
     .is('submission_id', null);
 
@@ -15,17 +18,18 @@ export default async function JudgesPage({ params }: { params: Promise<{ id: str
     <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
       <Card>
         <h3 style={{ marginTop: 0, fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>
-          Assign a judge
+          Invite a judge
         </h3>
         <p style={{ color: 'var(--color-text-muted)' }}>
-          The judge must already have a Hackatone account (any sign-up works). They&apos;ll score every
-          submission in this hackathon.
+          Enter the judge&apos;s email and click <strong>Send invite</strong>. They&apos;ll receive an email
+          with a link to set up their account and access the judging interface. If they already have a
+          Hackatone account they&apos;ll be added immediately.
         </p>
-        <AssignJudgeForm hackathonId={id} />
+        <InviteJudgeForm hackathonId={id} />
       </Card>
 
       {(assignments?.length ?? 0) === 0 ? (
-        <EmptyState title="No judges assigned" body="Add a judge by email to enable scoring." />
+        <EmptyState title="No judges assigned" body="Invite a judge by email above to enable scoring." />
       ) : (
         <Table>
           <Thead>
