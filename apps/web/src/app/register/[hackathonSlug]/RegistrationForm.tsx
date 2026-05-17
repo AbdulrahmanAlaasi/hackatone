@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { SKILL_LEVELS, registrationFormSchema } from '@hackatone/shared';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { registerExistingUser, startCvAnalysis, submitRegistration } from './actions';
+import { registerExistingUser } from './actions';
 
 interface Props {
   hackathonId: string;
@@ -123,30 +123,48 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
     const email = form.email.trim().toLowerCase();
     const supabase = createSupabaseBrowserClient();
     try {
-      // 1. Create account + registration row (small server-action payload)
-      const res = await submitRegistration({
-        hackathonId,
-        hackathonSlug,
-        fullName: form.full_name,
-        email,
-        password: form.password,
-        phone: form.phone || null,
-        organizationOrCompany: form.university_or_company || null,
-        majorOrJobTitle: form.major_or_job_title || null,
-        skillLevel: form.skill_level || null,
-        skills: form.skills
-          ? form.skills.split(',').map((s) => s.trim()).filter(Boolean)
-          : [],
-        preferredTrackId: form.preferred_track_id || null,
-        githubUrl: form.github_url || null,
-        teamPreference: form.team_preference || null,
+      // 1. POST to /api/register — small JSON payload, no PDF in the request body
+      const apiRes = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hackathonId,
+          fullName: form.full_name,
+          email,
+          password: form.password,
+          phone: form.phone || null,
+          organizationOrCompany: form.university_or_company || null,
+          majorOrJobTitle: form.major_or_job_title || null,
+          skillLevel: form.skill_level || null,
+          skills: form.skills
+            ? form.skills.split(',').map((s) => s.trim()).filter(Boolean)
+            : [],
+          preferredTrackId: form.preferred_track_id || null,
+          githubUrl: form.github_url || null,
+          teamPreference: form.team_preference || null,
+        }),
       });
-      if (!res.ok) {
+
+      const json = (await apiRes.json().catch(() => null)) as
+        | { ok: true; userId: string }
+        | { ok: false; error: string }
+        | null;
+
+      if (!apiRes.ok || !json) {
         setLoading(false);
-        setError(res.error);
+        setError(
+          json && 'error' in json
+            ? json.error
+            : `Registration failed (HTTP ${apiRes.status})`,
+        );
         return;
       }
-      const userId = res.userId;
+      if (!json.ok) {
+        setLoading(false);
+        setError(json.error);
+        return;
+      }
+      const userId = json.userId;
 
       // 2. Sign the user in client-side so they can upload the CV with their own session
       const signIn = await supabase.auth.signInWithPassword({ email, password: form.password });
@@ -157,14 +175,17 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
           .from('cvs')
           .upload(path, cvFile, { contentType: 'application/pdf', upsert: true });
         if (!upErr) {
-          // 4. Save signed URL + start AI analysis
+          // 4. Save signed URL + kick off AI analysis (fire and forget)
           const { data: signed } = await supabase.storage
             .from('cvs')
             .createSignedUrl(path, 60 * 60 * 24 * 365);
           if (signed?.signedUrl) {
             await supabase.from('profiles').update({ cv_url: signed.signedUrl }).eq('id', userId);
-            // Fire and forget — the success page will poll for results
-            void startCvAnalysis(userId);
+            void fetch('/api/start-analysis', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId }),
+            });
           }
         } else {
           console.warn('[register] cv upload:', upErr.message);
