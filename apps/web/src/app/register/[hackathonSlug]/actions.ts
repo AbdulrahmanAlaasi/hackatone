@@ -3,6 +3,15 @@
 import { createSupabaseServiceClient } from '@/lib/supabase/server';
 import { analyzeCv } from '@/lib/cv';
 
+// Edge-safe base64 decode (no Buffer dependency).
+function base64ToUint8Array(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const len = bin.length;
+  const out = new Uint8Array(len);
+  for (let i = 0; i < len; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 export interface RegisterInput {
   hackathonId: string;
   hackathonSlug: string;
@@ -57,7 +66,7 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
   if (!match) return { ok: false as const, error: 'Invalid CV upload' };
   const contentType = match[1]!;
   const base64Body = match[2]!;
-  const cvBytes = Buffer.from(base64Body, 'base64');
+  const cvBytes = base64ToUint8Array(base64Body);
   const path = `${userId}/cv.pdf`;
 
   const { error: uploadErr } = await svc.storage

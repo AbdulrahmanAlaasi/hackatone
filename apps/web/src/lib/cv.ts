@@ -3,6 +3,20 @@ import { createSupabaseServiceClient } from './supabase/server';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 
+// Edge-safe base64 — avoids Node's `Buffer` so it works on Cloudflare Workers.
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    bin += String.fromCharCode.apply(
+      null,
+      Array.from(bytes.subarray(i, i + chunkSize)) as unknown as number[],
+    );
+  }
+  return btoa(bin);
+}
+
 const SYSTEM_PROMPT = `You are an AI that reads engineering and design CVs for hackathons.
 Your job: extract a compact, machine-readable profile so the organizer can balance teams.
 
@@ -29,7 +43,7 @@ export async function analyzeCv(userId: string, cvSignedUrl: string): Promise<Cv
     const res = await fetch(cvSignedUrl);
     if (!res.ok) throw new Error(`CV fetch failed: ${res.status}`);
     const buf = await res.arrayBuffer();
-    const base64 = Buffer.from(buf).toString('base64');
+    const base64 = arrayBufferToBase64(buf);
 
     const client = getAnthropic();
     const msg = await client.messages.create({
