@@ -3,7 +3,6 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, Field, Input } from '@/components/ui';
-import { applyBalancedTeams } from './actions';
 
 interface Participant {
   registration_id: string;
@@ -77,7 +76,11 @@ export function TeamBalancerPanel({
           name: `${namePrefix} ${i + 1}`,
           memberUserIds: members.map((m) => m.user_id),
         }));
-        const res = await applyBalancedTeams(hackathonId, payload);
+        const res = await fetch('/api/teams/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hackathonId, teams: payload }),
+        }).then((r) => r.json());
         if (!res.ok) setMsg({ kind: 'err', text: res.error });
         else {
           setMsg({ kind: 'ok', text: `Created ${res.created} team${res.created === 1 ? '' : 's'}.` });
