@@ -1,0 +1,89 @@
+/* Split-pane auth layout: warm gradient on the left, focused form on the right. */
+
+.split {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--color-background);
+}
+@media (max-width: 900px) {
+  .split { grid-template-columns: 1fr; }
+  .brand { display: none; }
+}
+
+.brand {
+  position: relative;
+  overflow: hidden;
+  padding: 64px 56px;
+  color: #fff;
+  background: linear-gradient(135deg, #FFB066 0%, #FF8A3D 50%, #F26F23 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.brandTop { animation: fadeUp 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.brandTagline { color: rgba(255,255,255,0.92); font-size: var(--font-size-body-lg); margin: 20px 0 0; max-width: 420px; line-height: 1.55; }
+
+.brandFooter {
+  position: relative;
+  z-index: 2;
+  color: rgba(255,255,255,0.85);
+  font-size: var(--font-size-caption);
+}
+
+/* Decorative breathing blob */
+.blob {
+  position: absolute;
+  bottom: -120px;
+  right: -120px;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,255,255,0.35), rgba(255,255,255,0) 70%);
+  animation: float 6s ease-in-out infinite;
+  pointer-events: none;
+}
+.rings {
+  position: absolute;
+  top: -80px;
+  left: -80px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.4;
+  animation: spinSlow 24s linear infinite;
+  pointer-events: none;
+}
+.rings svg { width: 100%; height: 100%; }
+
+.form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+.formInner {
+  width: 100%;
+  max-width: 440px;
+  animation: fadeUp 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 100ms;
+}
+.back {
+  display: inline-block;
+  margin-bottom: var(--space-5);
+  color: var(--color-primary-pressed);
+  font-weight: 800;
+  text-decoration: none;
+  font-size: var(--font-size-caption);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-16px) scale(1.04); }
+}
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}

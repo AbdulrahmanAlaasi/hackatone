@@ -19,6 +19,7 @@ export const Td = (p: React.TdHTMLAttributes<HTMLTableCellElement>) => <td {...p
 export function EmptyState({ title, body }: { title: string; body?: string }) {
   return (
     <div className={styles.empty}>
+      <div className={styles.emptyOrb} aria-hidden />
       <p className={styles.emptyTitle}>{title}</p>
       {body ? <p className={styles.emptyBody}>{body}</p> : null}
     </div>

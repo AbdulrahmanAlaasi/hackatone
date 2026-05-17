@@ -29,8 +29,45 @@
 .table tbody tr:hover { background: var(--color-background); }
 
 .empty {
-  padding: var(--space-8);
+  position: relative;
+  padding: var(--space-12) var(--space-6);
   text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
-.emptyTitle { font-weight: 800; font-size: var(--font-size-h3); margin: 0 0 var(--space-2); }
-.emptyBody  { color: var(--color-text-muted); margin: 0; }
+.empty::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 138, 61, 0.18), transparent 70%);
+  pointer-events: none;
+  animation: orbFloat 6s ease-in-out infinite;
+}
+.emptyOrb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin: 0 auto var(--space-3);
+  background: linear-gradient(135deg, #FFB066, #F26F23);
+  box-shadow: 0 12px 32px rgba(255, 138, 61, 0.35);
+  animation: orbBob 4s ease-in-out infinite;
+}
+.emptyTitle { position: relative; font-weight: 800; font-size: var(--font-size-h3); margin: 0 0 var(--space-2); }
+.emptyBody  { position: relative; color: var(--color-text-muted); margin: 0; }
+
+@keyframes orbFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-8px); }
+}
+@keyframes orbBob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-6px) scale(1.05); }
+}
