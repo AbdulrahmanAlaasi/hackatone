@@ -74,6 +74,35 @@ export default async function HomePage() {
             <>Free to set up. Your first hackathon takes about 5 minutes.</>
           )}
         </p>
+
+        {/* Mobile app promo for participants */}
+        <div className={styles.appPromo}>
+          <div className={styles.appPromoIcon} aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="3" />
+              <line x1="12" y1="18" x2="12.01" y2="18" />
+            </svg>
+          </div>
+          <div className={styles.appPromoText}>
+            <p className={styles.appPromoEyebrow}>For participants</p>
+            <p className={styles.appPromoTitle}>Get the Hackatone mobile app</p>
+            <p className={styles.appPromoBody}>
+              Your QR check-in, team chat, and submissions live on iOS &amp; Android. Coming to the
+              App Store soon — try it via Expo Go today.
+            </p>
+          </div>
+          <div className={styles.appPromoBadges}>
+            <span className={styles.appBadge}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              iOS
+            </span>
+            <span className={styles.appBadge}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V3.5c0-.83.5-1.5 1.5-1.5l13 9.5-13 9.5c-1 0-1.5-.67-1.5-1.5z"/></svg>
+              Android
+            </span>
+            <span className={`${styles.appBadge} ${styles.appBadgeSoon}`}>Soon</span>
+          </div>
+        </div>
       </div>
     </main>
   );
