@@ -8,29 +8,14 @@ export default function HomePage() {
       <div className={styles.ambient1} aria-hidden />
       <div className={styles.ambient2} aria-hidden />
 
-      {/* Corner metadata labels */}
-      <div className={styles.corners}>
-        <div className={`${styles.corner} ${styles.tl}`}>
-          <span>Project</span>
-          Hackatone
-        </div>
-        <div className={`${styles.corner} ${styles.tr}`}>
-          <span>Platform</span>
-          Hackathon OS
-          <span style={{ marginTop: 6 }}>2026</span>
-        </div>
+      {/* Top: big wordmark + tagline */}
+      <div className={styles.top}>
+        <h1 className={styles.bigName}>Hackatone</h1>
+        <p className={styles.tagline}>
+          Run hackathons end-to-end with AI-balanced teams, QR check-in, judging, and live
+          results.
+        </p>
       </div>
-
-      {/* External-link button top-right */}
-      <Link href="/signup" className={styles.extLink} aria-label="Get started">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M7 17 17 7" />
-          <path d="M8 7h9v9" />
-        </svg>
-      </Link>
-
-      {/* BIG wordmark at the top */}
-      <h1 className={styles.bigName}>Hackatone</h1>
 
       {/* Center: animated app-icon tile + actions */}
       <div className={styles.center}>
@@ -40,7 +25,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Actions directly under the logo */}
         <div className={styles.actions}>
           <Link href="/signup" className={styles.actionPrimary}>
             Create organization
@@ -53,17 +37,6 @@ export default function HomePage() {
             Sign in
           </Link>
         </div>
-      </div>
-
-      {/* Bottom: small brand + tagline only */}
-      <div className={styles.bottom}>
-        <Link href="/" className={styles.brand}>
-          <LogoIconSmall className={styles.brandIcon} />
-          Hackatone
-        </Link>
-        <p className={styles.tagline}>
-          Run hackathons end-to-end with AI-balanced teams, QR check-in, judging, and live results.
-        </p>
       </div>
     </main>
   );
@@ -119,16 +92,6 @@ function AppIcon() {
           fill="#FFB02E"
         />
       </g>
-    </svg>
-  );
-}
-
-function LogoIconSmall({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="#fff" />
-      <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="#fff" />
-      <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="#fff" strokeWidth="68" strokeLinecap="round" opacity="0.9" />
     </svg>
   );
 }

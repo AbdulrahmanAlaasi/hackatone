@@ -1,4 +1,4 @@
-/* Showcase landing — full-viewport orange canvas, big wordmark, animated icon, big actions under it. */
+/* Minimal showcase landing — wordmark + tagline + animated icon + two buttons. */
 
 .stage {
   min-height: 100vh;
@@ -45,49 +45,20 @@
   animation: drift 18s ease-in-out infinite reverse;
 }
 
-.corners {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-}
-.corner {
-  position: absolute;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
-  animation: fadeIn 800ms ease-out both;
-}
-.corner span { display: block; opacity: 0.55; font-size: 10px; }
-.tl { top: 32px; left: 40px; }
-.tr { top: 32px; right: 40px; text-align: right; }
-
-.extLink {
-  position: absolute;
-  top: 28px;
-  right: 32px;
-  z-index: 6;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  color: var(--color-primary-pressed);
-  text-decoration: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  transition: transform 200ms ease;
-}
-.extLink:hover { transform: scale(1.08); }
-
-.bigName {
+/* Top stack: big name + tagline directly under it */
+.top {
   position: relative;
   z-index: 4;
+  width: 100%;
+  padding: clamp(64px, 10vh, 120px) 24px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: fadeUp 900ms ease-out both;
+}
+.bigName {
   margin: 0;
-  padding-top: clamp(72px, 11vh, 120px);
   font-size: clamp(58px, 11vw, 168px);
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -95,9 +66,18 @@
   color: #fff;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
   text-align: center;
-  animation: fadeUp 900ms ease-out both;
+}
+.tagline {
+  margin: 0;
+  max-width: 620px;
+  text-align: center;
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
 }
 
+/* Center: logo + actions */
 .center {
   position: relative;
   z-index: 4;
@@ -107,8 +87,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 24px 16px 120px;
-  gap: clamp(32px, 5vh, 64px);
+  padding: 32px 16px 64px;
+  gap: clamp(32px, 5vh, 56px);
 }
 
 .logoWrap {
@@ -131,7 +111,6 @@
 .spark { transform-origin: 295px 115px; animation: sparkPulse 3.6s ease-in-out infinite; }
 .sparkBig { transform-origin: 371px 115px; animation: sparkRotate 9s linear infinite; }
 
-/* Actions directly under the logo — large, clear */
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -169,52 +148,16 @@
 .actionSecondary:hover { background: rgba(255, 255, 255, 0.24); transform: translateY(-3px); }
 .actionSecondary:active { transform: translateY(0); }
 
-.bottom {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 5;
-  padding: 24px 40px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: fadeIn 900ms 400ms ease-out both;
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #fff;
-  text-decoration: none;
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: -0.01em;
-}
-.brandIcon { width: 24px; height: 24px; }
-.tagline {
-  margin: 0 0 0 34px;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 12px;
-  max-width: 380px;
-  line-height: 1.5;
-}
-
 @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
 @keyframes spinY { 0%,100% { transform: rotateY(-10deg) rotateX(2deg); } 50% { transform: rotateY(10deg) rotateX(-2deg); } }
 @keyframes sparkPulse { 0%,100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.18); } }
 @keyframes sparkRotate { to { transform: rotate(360deg); } }
 @keyframes drift { 0%,100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -40px) scale(1.08); } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 768px) {
-  .corner { font-size: 10px; }
-  .tl { top: 20px; left: 20px; }
-  .tr { top: 20px; right: 20px; }
-  .extLink { top: 18px; right: 20px; }
-  .bigName { padding-top: 80px; font-size: clamp(48px, 16vw, 88px); }
+  .top { padding-top: 72px; }
+  .bigName { font-size: clamp(48px, 16vw, 88px); }
+  .tagline { font-size: 14px; padding: 0 12px; }
   .actionPrimary, .actionSecondary { font-size: 15px; padding: 16px 26px; min-height: 52px; }
-  .center { padding-bottom: 140px; }
-  .bottom { padding: 20px 20px 24px; }
 }
