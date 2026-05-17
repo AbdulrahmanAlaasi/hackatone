@@ -4,13 +4,8 @@ import type { ReactNode } from 'react';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SignOutButton } from './SignOutButton';
 import { NotificationBell } from './NotificationBell';
+import { HackathonsDropdown } from './HackathonsDropdown';
 import styles from './layout.module.css';
-
-const NAV = [
-  { href: '/dashboard', label: 'Overview' },
-  { href: '/dashboard/hackathons', label: 'Hackathons' },
-  { href: '/dashboard/settings', label: 'Settings' },
-];
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient();
@@ -20,11 +15,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, email')
-    .eq('id', user.id)
-    .maybeSingle();
+  // Role-based access: if user has no organization membership but has judge
+  // assignments, push them to the judge area.
+  const [{ data: profile }, { data: orgMember }, { data: judgeAssigned }] = await Promise.all([
+    supabase.from('profiles').select('full_name, email').eq('id', user.id).maybeSingle(),
+    supabase.from('organization_members').select('id').eq('user_id', user.id).limit(1).maybeSingle(),
+    supabase.from('judge_assignments').select('id').eq('judge_id', user.id).limit(1).maybeSingle(),
+  ]);
+
+  if (!orgMember && judgeAssigned) redirect('/judge');
 
   return (
     <div className={styles.shell}>
@@ -33,11 +32,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           Hackatone
         </Link>
         <nav className={styles.nav}>
-          {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className={styles.navItem}>
-              {item.label}
+          <Link href="/dashboard" className={styles.navItem}>
+            Overview
+          </Link>
+          <HackathonsDropdown />
+          <Link href="/dashboard/settings" className={styles.navItem}>
+            Settings
+          </Link>
+          {judgeAssigned ? (
+            <Link href="/judge" className={styles.navItem} style={{ color: 'var(--color-primary-pressed)' }}>
+              Judge view →
             </Link>
-          ))}
+          ) : null}
         </nav>
         <div className={styles.user}>
           <div>
@@ -48,7 +54,6 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
       </aside>
       <main className={styles.main}>
-        {/* Notification bell floats at top-right of the content area */}
         <div className={styles.bellSlot}>
           <NotificationBell />
         </div>

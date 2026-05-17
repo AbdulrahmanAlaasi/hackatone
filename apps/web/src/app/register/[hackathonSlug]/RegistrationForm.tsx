@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { SKILL_LEVELS, registrationFormSchema } from '@hackatone/shared';
-import { submitRegistration } from './actions';
+import { registerExistingUser, submitRegistration } from './actions';
 
 interface Props {
   hackathonId: string;
@@ -18,6 +18,7 @@ const MAX_CV_BYTES = 5 * 1024 * 1024;
 export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, tracks }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -52,6 +53,36 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
     e.preventDefault();
     setError(null);
 
+    // -------------------- existing-account path --------------------
+    if (mode === 'existing') {
+      if (!form.full_name.trim() || !form.email.trim()) {
+        setError('Please enter your name and email.');
+        return;
+      }
+      setLoading(true);
+      const res = await registerExistingUser({
+        hackathonId,
+        email: form.email.trim().toLowerCase(),
+        fullName: form.full_name,
+        phone: form.phone || null,
+        organizationOrCompany: form.university_or_company || null,
+        majorOrJobTitle: form.major_or_job_title || null,
+        preferredTrackId: form.preferred_track_id || null,
+        teamPreference: form.team_preference || null,
+      });
+      setLoading(false);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const successEmail = encodeURIComponent(form.email.trim().toLowerCase());
+      router.push(
+        `/registration-success?hackathon=${encodeURIComponent(hackathonTitle)}&slug=${hackathonSlug}&email=${successEmail}`,
+      );
+      return;
+    }
+
+    // -------------------- new-account path (CV + password) --------------------
     const parsed = registrationFormSchema.safeParse({
       full_name: form.full_name,
       email: form.email,
@@ -124,10 +155,58 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
 
   return (
     <form onSubmit={onSubmit} style={{ display: 'grid', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+      {/* Mode toggle */}
+      <div
+        role="tablist"
+        aria-label="Account mode"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          padding: 4,
+          background: 'var(--color-surface-soft)',
+          borderRadius: 999,
+          gap: 4,
+        }}
+      >
+        {(['new', 'existing'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="tab"
+            aria-selected={mode === m}
+            onClick={() => {
+              setMode(m);
+              setError(null);
+            }}
+            style={{
+              padding: '12px 16px',
+              borderRadius: 999,
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: 'var(--font-size-body)',
+              background: mode === m ? 'var(--color-primary)' : 'transparent',
+              color: mode === m ? '#fff' : 'var(--color-text)',
+              transition: 'background-color 150ms ease',
+            }}
+          >
+            {m === 'new' ? "I'm new here" : 'I already have an account'}
+          </button>
+        ))}
+      </div>
+
       <Field label="Full name" htmlFor="r-name">
         <Input id="r-name" required value={form.full_name} onChange={(e) => set('full_name', e.target.value)} />
       </Field>
-      <Field label="Email" htmlFor="r-email" hint="We'll create your Hackatone account with this email.">
+      <Field
+        label="Email"
+        htmlFor="r-email"
+        hint={
+          mode === 'existing'
+            ? "We'll find your Hackatone account by this email."
+            : "We'll create your Hackatone account with this email."
+        }
+      >
         <Input
           id="r-email"
           type="email"
@@ -137,48 +216,54 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
           onChange={(e) => set('email', e.target.value)}
         />
       </Field>
-      <Field label="Password" htmlFor="r-pw" hint="At least 8 characters. You'll use this to sign into the mobile app.">
-        <Input
-          id="r-pw"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          value={form.password}
-          onChange={(e) => set('password', e.target.value)}
-        />
-      </Field>
 
-      <Field
-        label="CV (PDF, required)"
-        htmlFor="r-cv"
-        hint="We use AI to extract your skills so organizers can build balanced teams. Max 5 MB."
-      >
-        <input
-          ref={fileRef}
-          id="r-cv"
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
-          required
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: 12,
-            background: 'var(--color-surface)',
-            border: '1px dashed var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            fontFamily: 'inherit',
-            fontSize: 'var(--font-size-body)',
-            cursor: 'pointer',
-          }}
-        />
-        {cvFile ? (
-          <p style={{ marginTop: 6, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-caption)' }}>
-            Selected: <strong>{cvFile.name}</strong> ({(cvFile.size / 1024).toFixed(0)} KB)
-          </p>
-        ) : null}
-      </Field>
+      {/* New-account-only fields */}
+      {mode === 'new' ? (
+        <>
+          <Field label="Password" htmlFor="r-pw" hint="At least 8 characters. You'll use this to sign into the mobile app.">
+            <Input
+              id="r-pw"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              value={form.password}
+              onChange={(e) => set('password', e.target.value)}
+            />
+          </Field>
+
+          <Field
+            label="CV (PDF, required)"
+            htmlFor="r-cv"
+            hint="We use AI to extract your skills so organizers can build balanced teams. Max 5 MB."
+          >
+            <input
+              ref={fileRef}
+              id="r-cv"
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+              required
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: 12,
+                background: 'var(--color-surface)',
+                border: '1px dashed var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                fontFamily: 'inherit',
+                fontSize: 'var(--font-size-body)',
+                cursor: 'pointer',
+              }}
+            />
+            {cvFile ? (
+              <p style={{ marginTop: 6, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-caption)' }}>
+                Selected: <strong>{cvFile.name}</strong> ({(cvFile.size / 1024).toFixed(0)} KB)
+              </p>
+            ) : null}
+          </Field>
+        </>
+      ) : null}
 
       <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <Field label="Phone (optional)" htmlFor="r-phone">
@@ -190,36 +275,38 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
         <Field label="Major / job title" htmlFor="r-major">
           <Input id="r-major" value={form.major_or_job_title} onChange={(e) => set('major_or_job_title', e.target.value)} />
         </Field>
-        <Field label="Self-reported skill level" htmlFor="r-skill">
-          <Select id="r-skill" value={form.skill_level} onChange={(e) => set('skill_level', e.target.value as any)}>
-            <option value="">Prefer not to say</option>
-            {SKILL_LEVELS.map((lvl) => (
-              <option key={lvl} value={lvl}>
-                {lvl}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {mode === 'new' ? (
+          <Field label="Self-reported skill level" htmlFor="r-skill">
+            <Select id="r-skill" value={form.skill_level} onChange={(e) => set('skill_level', e.target.value as any)}>
+              <option value="">Prefer not to say</option>
+              {SKILL_LEVELS.map((lvl) => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
       </div>
 
-      <Field label="Skills" htmlFor="r-skills" hint="Comma-separated. e.g. React, Python, design">
-        <Input id="r-skills" value={form.skills} onChange={(e) => set('skills', e.target.value)} />
-      </Field>
+      {mode === 'new' ? (
+        <Field label="Skills" htmlFor="r-skills" hint="Comma-separated. e.g. React, Python, design">
+          <Input id="r-skills" value={form.skills} onChange={(e) => set('skills', e.target.value)} />
+        </Field>
+      ) : null}
 
       <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <Field label="Preferred track" htmlFor="r-track">
           <Select id="r-track" value={form.preferred_track_id} onChange={(e) => set('preferred_track_id', e.target.value)}>
             <option value="">No preference</option>
             {tracks.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
+              <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </Select>
         </Field>
-        <Field label="GitHub / portfolio URL" htmlFor="r-gh">
-          <Input id="r-gh" type="url" placeholder="https://github.com/you" value={form.github_url} onChange={(e) => set('github_url', e.target.value)} />
-        </Field>
+        {mode === 'new' ? (
+          <Field label="GitHub / portfolio URL" htmlFor="r-gh">
+            <Input id="r-gh" type="url" placeholder="https://github.com/you" value={form.github_url} onChange={(e) => set('github_url', e.target.value)} />
+          </Field>
+        ) : null}
       </div>
 
       <Field
@@ -247,7 +334,7 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       ) : null}
 
       <Button type="submit" fullWidth loading={loading}>
-        {loading ? 'Submitting…' : 'Submit registration'}
+        {loading ? 'Submitting…' : mode === 'existing' ? 'Register with existing account' : 'Submit registration'}
       </Button>
       <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-muted)', margin: 0 }}>
         Your registration starts as <strong>pending</strong>. Organizers will accept or decline it.

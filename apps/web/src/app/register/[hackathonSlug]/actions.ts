@@ -161,6 +161,55 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
 /**
  * Allow the success page to poll for analysis completion / re-trigger if needed.
  */
+/**
+ * Register an existing Hackatone user (account already created elsewhere).
+ * No password needed, no CV upload — just attach the registration to their user.
+ * If the account doesn't exist, returns an error so the form can switch to the new-account flow.
+ */
+export async function registerExistingUser(input: {
+  hackathonId: string;
+  email: string;
+  fullName: string;
+  phone?: string | null;
+  organizationOrCompany?: string | null;
+  majorOrJobTitle?: string | null;
+  preferredTrackId?: string | null;
+  teamPreference?: string | null;
+}) {
+  const svc = createSupabaseServiceClient();
+  const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const existing = list?.users.find(
+    (u) => u.email?.toLowerCase() === input.email.toLowerCase(),
+  );
+  if (!existing) {
+    return {
+      ok: false as const,
+      error:
+        "We couldn't find an account with that email. Switch to ‘I'm new here’ and we'll create one.",
+    };
+  }
+
+  const { error: regErr } = await svc.from('registrations').insert({
+    hackathon_id: input.hackathonId,
+    user_id: existing.id,
+    full_name: input.fullName,
+    email: input.email,
+    phone: input.phone ?? null,
+    organization_or_company: input.organizationOrCompany ?? null,
+    major_or_job_title: input.majorOrJobTitle ?? null,
+    preferred_track_id: input.preferredTrackId ?? null,
+    team_preference: input.teamPreference ?? null,
+    status: 'pending',
+  });
+  if (regErr) {
+    if (regErr.code === '23505') {
+      return { ok: false as const, error: 'You are already registered for this hackathon.' };
+    }
+    return { ok: false as const, error: regErr.message };
+  }
+  return { ok: true as const };
+}
+
 export async function getAnalysisStatus(email: string) {
   const svc = createSupabaseServiceClient();
   const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
