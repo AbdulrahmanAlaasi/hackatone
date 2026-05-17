@@ -33,13 +33,6 @@ function initials(name?: string | null, email?: string | null) {
   return ((parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '')).toUpperCase();
 }
 
-const TONE: Record<Channel['scope'], 'success' | 'info' | 'warning' | 'neutral'> = {
-  hackathon: 'success',
-  team: 'info',
-  judge: 'warning',
-  announcement: 'neutral',
-};
-
 export function ChatPanel({
   hackathonId,
   channels,
@@ -133,9 +126,20 @@ export function ChatPanel({
                 onClick={() => setActiveId(c.id)}
                 className={`${styles.channelBtn} ${activeId === c.id ? styles.channelBtnActive : ''}`}
               >
-                <span className={styles.channelDot} />
-                <span className={styles.channelName}>{c.scope === 'team' ? `Team: ${c.name}` : c.name}</span>
-                <Badge tone={TONE[c.scope]}>{c.scope}</Badge>
+                <span
+                  className={styles.channelDot}
+                  style={{
+                    background:
+                      c.scope === 'hackathon'
+                        ? '#7BCFA6'
+                        : c.scope === 'team'
+                        ? 'var(--color-primary)'
+                        : 'var(--color-text-muted)',
+                  }}
+                />
+                <span className={styles.channelName}>
+                  {c.scope === 'team' ? `# ${c.name}` : `# ${c.name}`}
+                </span>
               </button>
             </li>
           ))}
