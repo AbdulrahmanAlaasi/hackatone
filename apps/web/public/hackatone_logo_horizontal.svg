@@ -1,0 +1,36 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Hackatone Horizontal Logo</title>
+  <desc id="desc">Horizontal Hackatone logo lockup with icon on the left and wordmark on the right.</desc>
+  <defs>
+    <linearGradient id="orangeGradient" x1="60" y1="60" x2="255" y2="265" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF9D4D"/>
+      <stop offset="0.55" stop-color="#FF8A3D"/>
+      <stop offset="1" stop-color="#E96F26"/>
+    </linearGradient>
+    <linearGradient id="deepOrangeGradient" x1="80" y1="95" x2="240" y2="245" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E96F26" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FF8A3D" stop-opacity="0.8"/>
+    </linearGradient>
+  </defs>
+
+  <g id="icon-mark" transform="translate(48 38)">
+    <path d="M68 95C68 73.461 85.461 56 107 56C128.539 56 146 73.461 146 95V227C146 248.539 128.539 266 107 266C85.461 266 68 248.539 68 227V95Z" fill="url(#orangeGradient)"/>
+    <path d="M184 95C184 73.461 201.461 56 223 56C244.539 56 262 73.461 262 95V227C262 248.539 244.539 266 223 266C201.461 266 184 248.539 184 227V95Z" fill="url(#orangeGradient)"/>
+    <path d="M107 94C126 109 145 129 165 151C185 172 204 192 223 208" stroke="url(#deepOrangeGradient)" stroke-width="68" stroke-linecap="round" opacity="0.86"/>
+    <path d="M107 95C126 110 145 131 165 152C185 173 204 193 223 209" stroke="url(#orangeGradient)" stroke-width="55" stroke-linecap="round"/>
+    <path d="M107 227C127 212 143 198 165 198C187 198 203 212 223 227" stroke="url(#orangeGradient)" stroke-width="47" stroke-linecap="round"/>
+    <circle cx="107" cy="95" r="16" fill="#FFF8EF"/>
+    <circle cx="107" cy="227" r="16" fill="#FFF8EF"/>
+    <circle cx="165" cy="161" r="16" fill="#FFF8EF"/>
+    <circle cx="223" cy="95" r="16" fill="#FFF8EF"/>
+    <circle cx="223" cy="227" r="16" fill="#FFF8EF"/>
+    <g fill="#FFD166">
+      <rect x="192" y="44" width="15" height="15" rx="4"/>
+      <rect x="170" y="65" width="12" height="12" rx="4"/>
+      <rect x="151" y="88" width="10" height="10" rx="3"/>
+      <path d="M262 16C267 39 272 44 295 49C272 54 267 59 262 82C257 59 252 54 229 49C252 44 257 39 262 16Z" fill="#FFB02E"/>
+    </g>
+  </g>
+
+  <text id="wordmark" x="350" y="224" fill="#2B2B2B" font-family="Nunito Sans, Manrope, Plus Jakarta Sans, Arial Rounded MT Bold, Arial, sans-serif" font-size="128" font-weight="900" letter-spacing="-4">Hackatone</text>
+</svg>

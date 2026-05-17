@@ -6,6 +6,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Hackatone',
   description: 'Run hackathons end-to-end: registration, check-in, teams, submissions, judging.',
+  icons: {
+    icon: '/hackatone_icon.svg',
+    apple: '/hackatone_app_icon.svg',
+  },
 };
 
 export const runtime = 'edge';
