@@ -3,7 +3,6 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
-import { checkInById, decideRegistration, undoCheckIn } from './actions';
 
 export function RowActions({
   hackathonId,
@@ -19,12 +18,25 @@ export function RowActions({
   const router = useRouter();
   const [pending, start] = useTransition();
 
-  function run(fn: () => Promise<unknown>) {
-    start(() => {
-      void (async () => {
-        await fn();
-        router.refresh();
-      })();
+  function decide(decision: 'accepted' | 'rejected' | 'pending') {
+    start(async () => {
+      await fetch('/api/participants/decide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hackathonId, registrationId, decision }),
+      });
+      router.refresh();
+    });
+  }
+
+  function checkIn(undo = false) {
+    start(async () => {
+      await fetch('/api/participants/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hackathonId, registrationId, undo }),
+      });
+      router.refresh();
     });
   }
 
@@ -32,25 +44,25 @@ export function RowActions({
     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
       {status === 'pending' || status === 'waitlisted' ? (
         <>
-          <Button variant="secondary" loading={pending} onClick={() => run(() => decideRegistration(hackathonId, registrationId, 'accepted'))}>
+          <Button variant="secondary" loading={pending} onClick={() => decide('accepted')}>
             Accept
           </Button>
-          <Button variant="text" loading={pending} onClick={() => run(() => decideRegistration(hackathonId, registrationId, 'rejected'))}>
+          <Button variant="text" loading={pending} onClick={() => decide('rejected')}>
             Reject
           </Button>
         </>
       ) : status === 'accepted' ? (
         checkedIn ? (
-          <Button variant="text" loading={pending} onClick={() => run(() => undoCheckIn(hackathonId, registrationId))}>
+          <Button variant="text" loading={pending} onClick={() => checkIn(true)}>
             Undo check-in
           </Button>
         ) : (
-          <Button variant="secondary" loading={pending} onClick={() => run(() => checkInById(hackathonId, registrationId))}>
+          <Button variant="secondary" loading={pending} onClick={() => checkIn()}>
             Check in
           </Button>
         )
       ) : (
-        <Button variant="text" loading={pending} onClick={() => run(() => decideRegistration(hackathonId, registrationId, 'pending'))}>
+        <Button variant="text" loading={pending} onClick={() => decide('pending')}>
           Reopen
         </Button>
       )}
