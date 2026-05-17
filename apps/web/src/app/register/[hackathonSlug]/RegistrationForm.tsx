@@ -4,7 +4,8 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { SKILL_LEVELS, registrationFormSchema } from '@hackatone/shared';
-import { registerExistingUser, submitRegistration } from './actions';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { registerExistingUser, startCvAnalysis, submitRegistration } from './actions';
 
 interface Props {
   hackathonId: string;
@@ -119,15 +120,15 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
     }
 
     setLoading(true);
-    let res: { ok: true } | { ok: false; error: string };
+    const email = form.email.trim().toLowerCase();
+    const supabase = createSupabaseBrowserClient();
     try {
-      const cvDataUrl = await fileToDataUrl(cvFile);
-      res = await submitRegistration(
-      {
+      // 1. Create account + registration row (small server-action payload)
+      const res = await submitRegistration({
         hackathonId,
         hackathonSlug,
         fullName: form.full_name,
-        email: form.email.trim().toLowerCase(),
+        email,
         password: form.password,
         phone: form.phone || null,
         organizationOrCompany: form.university_or_company || null,
@@ -139,9 +140,36 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
         preferredTrackId: form.preferred_track_id || null,
         githubUrl: form.github_url || null,
         teamPreference: form.team_preference || null,
-      },
-      cvDataUrl,
-    );
+      });
+      if (!res.ok) {
+        setLoading(false);
+        setError(res.error);
+        return;
+      }
+      const userId = res.userId;
+
+      // 2. Sign the user in client-side so they can upload the CV with their own session
+      const signIn = await supabase.auth.signInWithPassword({ email, password: form.password });
+      if (!signIn.error && signIn.data?.session && userId) {
+        // 3. Upload CV directly to Supabase storage (no server-action body limits)
+        const path = `${userId}/cv.pdf`;
+        const { error: upErr } = await supabase.storage
+          .from('cvs')
+          .upload(path, cvFile, { contentType: 'application/pdf', upsert: true });
+        if (!upErr) {
+          // 4. Save signed URL + start AI analysis
+          const { data: signed } = await supabase.storage
+            .from('cvs')
+            .createSignedUrl(path, 60 * 60 * 24 * 365);
+          if (signed?.signedUrl) {
+            await supabase.from('profiles').update({ cv_url: signed.signedUrl }).eq('id', userId);
+            // Fire and forget — the success page will poll for results
+            void startCvAnalysis(userId);
+          }
+        } else {
+          console.warn('[register] cv upload:', upErr.message);
+        }
+      }
     } catch (err: any) {
       setLoading(false);
       setError(
@@ -153,12 +181,7 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
     }
     setLoading(false);
 
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-
-    const successEmail = encodeURIComponent(form.email.trim().toLowerCase());
+    const successEmail = encodeURIComponent(email);
     router.push(
       `/registration-success?hackathon=${encodeURIComponent(hackathonTitle)}&slug=${hackathonSlug}&email=${successEmail}`,
     );

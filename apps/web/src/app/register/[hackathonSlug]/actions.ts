@@ -3,18 +3,9 @@
 import { createSupabaseServiceClient } from '@/lib/supabase/server';
 import { analyzeCv } from '@/lib/cv';
 
-// Edge-safe base64 decode (no Buffer dependency).
-function base64ToUint8Array(b64: string): Uint8Array {
-  const bin = atob(b64);
-  const len = bin.length;
-  const out = new Uint8Array(len);
-  for (let i = 0; i < len; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
 /**
- * Direct REST call to Supabase GoTrue admin endpoint to create a user.
- * Avoids the supabase-js admin SDK which has been flaky on Cloudflare edge.
+ * Direct REST call to Supabase GoTrue admin endpoint — avoids the supabase-js
+ * admin SDK which can be flaky on Cloudflare edge.
  */
 async function createAuthUser(email: string, password: string, fullName: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -50,9 +41,7 @@ async function scheduleBackground(p: Promise<unknown>) {
       ctx.ctx.waitUntil(p);
       return;
     }
-  } catch {
-    /* not on Cloudflare */
-  }
+  } catch {}
   p.catch((err) => console.error('[scheduleBackground]', err));
 }
 
@@ -73,17 +62,18 @@ export interface RegisterInput {
 }
 
 /**
- * Lean registration: creates account + inserts registration row, then schedules
- * CV upload + AI analysis in the background. Returns in 2-5 seconds.
+ * Step 1 of registration: account + registration row.
+ *
+ * No CV here — that gets uploaded directly to Supabase storage by the browser
+ * after sign-in, to keep the server-action payload small (Cloudflare-friendly).
+ *
+ * Returns the new userId so the client can sign them in.
  */
-export async function submitRegistration(input: RegisterInput, cvDataUrl: string) {
+export async function submitRegistration(input: RegisterInput) {
   const svc = createSupabaseServiceClient();
 
-  // ----------------------------------------------------------
-  // 1. Resolve user (existing by email, or create new)
-  // ----------------------------------------------------------
+  // Resolve or create the auth user
   let userId: string | null = null;
-
   const { data: existingProfile } = await svc
     .from('profiles')
     .select('id')
@@ -95,9 +85,12 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
   } else {
     const created = await createAuthUser(input.email, input.password, input.fullName);
     if (!created.ok) {
-      // If it's a "user already registered" race, try profile lookup once more
       if (created.error.toLowerCase().includes('already')) {
-        const { data: again } = await svc.from('profiles').select('id').ilike('email', input.email).maybeSingle();
+        const { data: again } = await svc
+          .from('profiles')
+          .select('id')
+          .ilike('email', input.email)
+          .maybeSingle();
         userId = again?.id ?? null;
       }
       if (!userId) return { ok: false as const, error: created.error };
@@ -107,10 +100,7 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
   }
   if (!userId) return { ok: false as const, error: 'No user id resolved' };
 
-  // ----------------------------------------------------------
-  // 2. Insert registration row IMMEDIATELY (so it's saved even
-  //    if the CV upload or AI fails)
-  // ----------------------------------------------------------
+  // Insert registration row
   const { error: regErr } = await svc.from('registrations').insert({
     hackathon_id: input.hackathonId,
     user_id: userId,
@@ -133,9 +123,7 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
     return { ok: false as const, error: regErr.message };
   }
 
-  // ----------------------------------------------------------
-  // 3. Update profile fields (non-blocking — non-critical)
-  // ----------------------------------------------------------
+  // Profile metadata
   await svc
     .from('profiles')
     .update({
@@ -148,50 +136,23 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
     })
     .eq('id', userId);
 
-  // ----------------------------------------------------------
-  // 4. CV upload + AI analysis happen in the BACKGROUND.
-  //    Even if the worker dies after the response, the success
-  //    page's polling will re-trigger analysis via the cv_url.
-  // ----------------------------------------------------------
-  scheduleBackground(uploadAndAnalyze(userId, cvDataUrl));
+  return { ok: true as const, userId };
+}
 
+/**
+ * Step 2 (background): after the browser uploads the CV, this kicks off the
+ * Claude analysis. The client just calls this after the upload completes.
+ */
+export async function startCvAnalysis(userId: string) {
+  const svc = createSupabaseServiceClient();
+  const { data: p } = await svc.from('profiles').select('cv_url').eq('id', userId).maybeSingle();
+  if (!p?.cv_url) return { ok: false as const, error: 'CV not found' };
+  scheduleBackground(analyzeCv(userId, p.cv_url));
   return { ok: true as const };
 }
 
 /**
- * Background task: parse CV data URL → upload to storage → analyze with Claude.
- * Best-effort. If it fails, the success page polling will retry analysis.
- */
-async function uploadAndAnalyze(userId: string, cvDataUrl: string) {
-  try {
-    const svc = createSupabaseServiceClient();
-    const match = cvDataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return;
-    const contentType = match[1]!;
-    const base64Body = match[2]!;
-    const cvBytes = base64ToUint8Array(base64Body);
-    const path = `${userId}/cv.pdf`;
-
-    const { error: uploadErr } = await svc.storage
-      .from('cvs')
-      .upload(path, cvBytes, { contentType, upsert: true });
-    if (uploadErr) {
-      console.error('[uploadAndAnalyze] upload', uploadErr.message);
-      return;
-    }
-
-    const { data: signed } = await svc.storage.from('cvs').createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (!signed?.signedUrl) return;
-
-    await svc.from('profiles').update({ cv_url: signed.signedUrl }).eq('id', userId);
-    await analyzeCv(userId, signed.signedUrl);
-  } catch (err) {
-    console.error('[uploadAndAnalyze] error', err);
-  }
-}
-
-/**
- * Register an existing Hackatone user (account already created elsewhere).
+ * Register an existing user (account already exists) — quick path, no CV.
  */
 export async function registerExistingUser(input: {
   hackathonId: string;
@@ -216,7 +177,6 @@ export async function registerExistingUser(input: {
         "We couldn't find an account with that email. Switch to ‘I'm new here’ and we'll create one.",
     };
   }
-
   const { error: regErr } = await svc.from('registrations').insert({
     hackathon_id: input.hackathonId,
     user_id: existing.id,
