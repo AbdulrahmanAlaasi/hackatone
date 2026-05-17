@@ -63,26 +63,31 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
   // ------------------------------------------------------------
   let userId: string | null = null;
 
-  // Try to create first; if conflict, fall back to listUsers lookup
-  const { data: created, error: createErr } = await svc.auth.admin.createUser({
-    email: input.email,
-    password: input.password,
-    email_confirm: true,
-    user_metadata: { full_name: input.fullName },
-  });
+  // Fast path: look up the existing user via the indexed `profiles` table
+  // (auto-created on auth signup). Avoids paging through auth.admin.listUsers.
+  const { data: existingProfile } = await svc
+    .from('profiles')
+    .select('id')
+    .ilike('email', input.email)
+    .maybeSingle();
 
-  if (created?.user) {
-    userId = created.user.id;
-  } else if (createErr) {
-    const msg = (createErr.message || '').toLowerCase();
-    if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
-      // existing user — look it up
-      const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
-      userId =
-        list?.users.find((u) => u.email?.toLowerCase() === input.email.toLowerCase())?.id ?? null;
-      if (!userId) return { ok: false as const, error: 'Account exists but could not be resolved.' };
-    } else {
-      return { ok: false as const, error: createErr.message };
+  if (existingProfile?.id) {
+    userId = existingProfile.id;
+  } else {
+    const { data: created, error: createErr } = await svc.auth.admin.createUser({
+      email: input.email,
+      password: input.password,
+      email_confirm: true,
+      user_metadata: { full_name: input.fullName },
+    });
+    if (created?.user) {
+      userId = created.user.id;
+    } else if (createErr) {
+      // Edge case: race condition where another request created the user just now.
+      // Re-read profiles once.
+      const { data: again } = await svc.from('profiles').select('id').ilike('email', input.email).maybeSingle();
+      userId = again?.id ?? null;
+      if (!userId) return { ok: false as const, error: createErr.message };
     }
   }
   if (!userId) return { ok: false as const, error: 'No user id resolved' };
@@ -177,10 +182,12 @@ export async function registerExistingUser(input: {
   teamPreference?: string | null;
 }) {
   const svc = createSupabaseServiceClient();
-  const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const existing = list?.users.find(
-    (u) => u.email?.toLowerCase() === input.email.toLowerCase(),
-  );
+  // Fast indexed lookup via profiles
+  const { data: existing } = await svc
+    .from('profiles')
+    .select('id')
+    .ilike('email', input.email)
+    .maybeSingle();
   if (!existing) {
     return {
       ok: false as const,
@@ -212,13 +219,11 @@ export async function registerExistingUser(input: {
 
 export async function getAnalysisStatus(email: string) {
   const svc = createSupabaseServiceClient();
-  const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const u = list?.users.find((x) => x.email?.toLowerCase() === email.toLowerCase());
-  if (!u) return { state: 'missing' as const };
+  // Direct indexed lookup — fast.
   const { data: p } = await svc
     .from('profiles')
-    .select('cv_url, ai_level, ai_skills, ai_summary, ai_analyzed_at')
-    .eq('id', u.id)
+    .select('id, cv_url, ai_level, ai_skills, ai_summary, ai_analyzed_at')
+    .ilike('email', email)
     .maybeSingle();
   if (!p) return { state: 'missing' as const };
   if (p.ai_analyzed_at) {
@@ -231,7 +236,7 @@ export async function getAnalysisStatus(email: string) {
   }
   // If no analysis after a while and CV exists, re-kick
   if (p.cv_url) {
-    await scheduleBackground(analyzeCv(u.id, p.cv_url));
+    await scheduleBackground(analyzeCv(p.id, p.cv_url));
     return { state: 'pending' as const };
   }
   return { state: 'no_cv' as const };
