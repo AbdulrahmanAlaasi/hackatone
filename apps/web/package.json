@@ -12,6 +12,7 @@
     "preview": "npm run pages:build && wrangler pages dev .vercel/output/static"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "@hackatone/shared": "*",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",

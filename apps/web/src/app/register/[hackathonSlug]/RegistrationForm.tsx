@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { SKILL_LEVELS, registrationFormSchema } from '@hackatone/shared';
+import { submitRegistration } from './actions';
 
 interface Props {
   hackathonId: string;
@@ -13,11 +13,15 @@ interface Props {
   tracks: Array<{ id: string; name: string; description: string | null }>;
 }
 
+const MAX_CV_BYTES = 5 * 1024 * 1024;
+
 export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, tracks }: Props) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     full_name: '',
     email: '',
+    password: '',
     phone: '',
     university_or_company: '',
     major_or_job_title: '',
@@ -27,11 +31,21 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
     github_url: '',
     team_preference: '',
   });
+  const [cvFile, setCvFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((s) => ({ ...s, [k]: v }));
+  }
+
+  function fileToDataUrl(f: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -56,32 +70,49 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       return;
     }
 
+    if (!cvFile) {
+      setError('Please upload your CV (PDF).');
+      return;
+    }
+    if (cvFile.type !== 'application/pdf') {
+      setError('CV must be a PDF.');
+      return;
+    }
+    if (cvFile.size > MAX_CV_BYTES) {
+      setError('CV is too large. Max 5 MB.');
+      return;
+    }
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
     setLoading(true);
-    const supabase = createSupabaseBrowserClient();
-    const { error: insertError } = await supabase.from('registrations').insert({
-      hackathon_id: hackathonId,
-      full_name: form.full_name,
-      email: form.email,
-      phone: form.phone || null,
-      organization_or_company: form.university_or_company || null,
-      major_or_job_title: form.major_or_job_title || null,
-      skill_level: form.skill_level || null,
-      skills: form.skills
-        ? form.skills.split(',').map((s) => s.trim()).filter(Boolean)
-        : [],
-      preferred_track_id: form.preferred_track_id || null,
-      github_url: form.github_url || null,
-      team_preference: form.team_preference || null,
-      status: 'pending',
-    });
+    const cvDataUrl = await fileToDataUrl(cvFile);
+    const res = await submitRegistration(
+      {
+        hackathonId,
+        hackathonSlug,
+        fullName: form.full_name,
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        phone: form.phone || null,
+        organizationOrCompany: form.university_or_company || null,
+        majorOrJobTitle: form.major_or_job_title || null,
+        skillLevel: form.skill_level || null,
+        skills: form.skills
+          ? form.skills.split(',').map((s) => s.trim()).filter(Boolean)
+          : [],
+        preferredTrackId: form.preferred_track_id || null,
+        githubUrl: form.github_url || null,
+        teamPreference: form.team_preference || null,
+      },
+      cvDataUrl,
+    );
     setLoading(false);
 
-    if (insertError) {
-      if (insertError.code === '23505') {
-        setError('This email is already registered for this hackathon.');
-      } else {
-        setError(insertError.message);
-      }
+    if (!res.ok) {
+      setError(res.error);
       return;
     }
 
@@ -95,9 +126,59 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       <Field label="Full name" htmlFor="r-name">
         <Input id="r-name" required value={form.full_name} onChange={(e) => set('full_name', e.target.value)} />
       </Field>
-      <Field label="Email" htmlFor="r-email" hint="Use this same email to sign into the Hackatone mobile app.">
-        <Input id="r-email" type="email" required value={form.email} onChange={(e) => set('email', e.target.value)} />
+      <Field label="Email" htmlFor="r-email" hint="We'll create your Hackatone account with this email.">
+        <Input
+          id="r-email"
+          type="email"
+          required
+          autoComplete="email"
+          value={form.email}
+          onChange={(e) => set('email', e.target.value)}
+        />
       </Field>
+      <Field label="Password" htmlFor="r-pw" hint="At least 8 characters. You'll use this to sign into the mobile app.">
+        <Input
+          id="r-pw"
+          type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
+          value={form.password}
+          onChange={(e) => set('password', e.target.value)}
+        />
+      </Field>
+
+      <Field
+        label="CV (PDF, required)"
+        htmlFor="r-cv"
+        hint="We use AI to extract your skills so organizers can build balanced teams. Max 5 MB."
+      >
+        <input
+          ref={fileRef}
+          id="r-cv"
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+          required
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: 12,
+            background: 'var(--color-surface)',
+            border: '1px dashed var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            fontFamily: 'inherit',
+            fontSize: 'var(--font-size-body)',
+            cursor: 'pointer',
+          }}
+        />
+        {cvFile ? (
+          <p style={{ marginTop: 6, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-caption)' }}>
+            Selected: <strong>{cvFile.name}</strong> ({(cvFile.size / 1024).toFixed(0)} KB)
+          </p>
+        ) : null}
+      </Field>
+
       <div style={{ display: 'grid', gap: 'var(--space-4)', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <Field label="Phone (optional)" htmlFor="r-phone">
           <Input id="r-phone" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
@@ -108,7 +189,7 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
         <Field label="Major / job title" htmlFor="r-major">
           <Input id="r-major" value={form.major_or_job_title} onChange={(e) => set('major_or_job_title', e.target.value)} />
         </Field>
-        <Field label="Skill level" htmlFor="r-skill">
+        <Field label="Self-reported skill level" htmlFor="r-skill">
           <Select id="r-skill" value={form.skill_level} onChange={(e) => set('skill_level', e.target.value as any)}>
             <option value="">Prefer not to say</option>
             {SKILL_LEVELS.map((lvl) => (
@@ -165,7 +246,7 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       ) : null}
 
       <Button type="submit" fullWidth loading={loading}>
-        Submit registration
+        {loading ? 'Submitting & analyzing CV…' : 'Submit registration'}
       </Button>
       <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-muted)', margin: 0 }}>
         Your registration starts as <strong>pending</strong>. Organizers will accept or decline it.

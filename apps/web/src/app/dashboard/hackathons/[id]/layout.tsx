@@ -21,6 +21,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/participants', label: 'Participants', icon: 'Users' },
       { href: '/check-in', label: 'Check-in', icon: 'Check' },
+      { href: '/teams-ai', label: 'AI team balancer', icon: 'Sparkles' },
       { href: '/judges', label: 'Judges', icon: 'User' },
     ],
   },
