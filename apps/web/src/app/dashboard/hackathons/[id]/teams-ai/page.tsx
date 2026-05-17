@@ -1,5 +1,6 @@
 import { Badge, Card, EmptyState } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
+import { createSupabaseServiceClient } from '@/lib/supabase/server';
 import { TeamBalancerPanel } from './TeamBalancerPanel';
 
 interface AcceptedParticipant {
@@ -20,32 +21,37 @@ export default async function AiTeamsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase } = await getCurrentUserOrRedirect();
+  // Auth check — ensure user is logged in
+  await getCurrentUserOrRedirect();
+  // Service client bypasses RLS so we can read other users' profile AI data
+  const svc = createSupabaseServiceClient();
 
-  const { data: hackathon } = await supabase
+  const { data: hackathon } = await svc
     .from('hackathons')
     .select('id, min_team_size, max_team_size')
     .eq('id', id)
     .maybeSingle();
 
-  const { data: rows } = await supabase
+  const { data: rows } = await svc
     .from('registrations')
     .select('id, user_id, full_name, email, profiles(ai_level, ai_skills, ai_strengths, ai_summary, ai_analyzed_at)')
     .eq('hackathon_id', id)
-    .eq('status', 'accepted')
-    .not('user_id', 'is', null);
+    .eq('status', 'accepted');
 
-  const participants: AcceptedParticipant[] = (rows ?? []).map((r: any) => ({
-    registration_id: r.id,
-    user_id: r.user_id,
-    full_name: r.full_name,
-    email: r.email,
-    ai_level: r.profiles?.ai_level ?? null,
-    ai_skills: r.profiles?.ai_skills ?? [],
-    ai_strengths: r.profiles?.ai_strengths ?? [],
-    ai_summary: r.profiles?.ai_summary ?? null,
-    ai_analyzed_at: r.profiles?.ai_analyzed_at ?? null,
-  }));
+  // Only include rows with a linked user account (user_id required to assign teams)
+  const participants: AcceptedParticipant[] = (rows ?? [])
+    .filter((r: any) => !!r.user_id)
+    .map((r: any) => ({
+      registration_id: r.id,
+      user_id: r.user_id,
+      full_name: r.full_name,
+      email: r.email,
+      ai_level: r.profiles?.ai_level ?? null,
+      ai_skills: r.profiles?.ai_skills ?? [],
+      ai_strengths: r.profiles?.ai_strengths ?? [],
+      ai_summary: r.profiles?.ai_summary ?? null,
+      ai_analyzed_at: r.profiles?.ai_analyzed_at ?? null,
+    }));
 
   const analyzed = participants.filter((p) => p.ai_level).length;
 
