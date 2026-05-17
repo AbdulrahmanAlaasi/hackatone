@@ -174,7 +174,7 @@ export function TeamBalancerPanel({
         </h3>
         <p style={{ margin: '0 0 12px', color: 'var(--color-text-muted)', fontSize: 13 }}>
           Each participant is shown with their AI-extracted skill level and summary from their CV.
-          The colored tag shows which team they'll be assigned to.
+          The colored tag shows which team they&apos;ll be assigned to.
         </p>
         {sorted.map((p) => (
           <ParticipantRow key={p.user_id} p={p} teamLabel={teamLabelMap[p.user_id]} />
