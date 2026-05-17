@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Select, Textarea } from '@/components/ui';
 import { SKILL_LEVELS, registrationFormSchema } from '@hackatone/shared';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { registerExistingUser } from './actions';
 
 interface Props {
   hackathonId: string;
@@ -61,19 +60,33 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
         return;
       }
       setLoading(true);
-      const res = await registerExistingUser({
-        hackathonId,
-        email: form.email.trim().toLowerCase(),
-        fullName: form.full_name,
-        phone: form.phone || null,
-        organizationOrCompany: form.university_or_company || null,
-        majorOrJobTitle: form.major_or_job_title || null,
-        preferredTrackId: form.preferred_track_id || null,
-        teamPreference: form.team_preference || null,
+      const apiRes = await fetch('/api/register-existing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hackathonId,
+          email: form.email.trim().toLowerCase(),
+          fullName: form.full_name,
+          phone: form.phone || null,
+          organizationOrCompany: form.university_or_company || null,
+          majorOrJobTitle: form.major_or_job_title || null,
+          preferredTrackId: form.preferred_track_id || null,
+          teamPreference: form.team_preference || null,
+        }),
       });
+      const j = (await apiRes.json().catch(() => null)) as
+        | { ok: true }
+        | { ok: false; error: string }
+        | null;
       setLoading(false);
-      if (!res.ok) {
-        setError(res.error);
+      if (!apiRes.ok || !j) {
+        setError(
+          j && 'error' in j ? j.error : `Registration failed (HTTP ${apiRes.status})`,
+        );
+        return;
+      }
+      if (!j.ok) {
+        setError(j.error);
         return;
       }
       const successEmail = encodeURIComponent(form.email.trim().toLowerCase());
