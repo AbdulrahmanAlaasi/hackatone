@@ -11,6 +11,7 @@ import {
   Eyebrow,
   StatCard,
 } from '@/components/ui';
+import { ActivityFeed } from './ActivityFeed';
 
 function greeting() {
   const h = new Date().getHours();
@@ -200,7 +201,7 @@ export default async function DashboardOverviewPage() {
                     }}
                     aria-hidden
                   >
-                    🚀
+                    <span style={{ width: 24, height: 24, borderRadius: 999, background: 'var(--color-primary)' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <CardTitle>{h.title}</CardTitle>
@@ -220,6 +221,13 @@ export default async function DashboardOverviewPage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section style={{ marginTop: 'var(--space-8)' }}>
+        <h2 style={{ fontSize: 'var(--font-size-h2)', fontWeight: 800, marginBottom: 'var(--space-4)' }}>
+          Recent activity
+        </h2>
+        <ActivityFeed />
       </section>
     </Container>
   );

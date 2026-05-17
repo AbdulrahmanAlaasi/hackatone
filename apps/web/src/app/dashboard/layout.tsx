@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SignOutButton } from './SignOutButton';
+import { NotificationBell } from './NotificationBell';
 import styles from './layout.module.css';
 
 const NAV = [
@@ -28,9 +29,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <Link href="/" className={styles.brand}>
-          Hackatone
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <Link href="/" className={styles.brand}>
+            Hackatone
+          </Link>
+          <NotificationBell />
+        </div>
         <nav className={styles.nav}>
           {NAV.map((item) => (
             <Link key={item.href} href={item.href} className={styles.navItem}>
