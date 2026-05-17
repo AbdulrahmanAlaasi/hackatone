@@ -17,25 +17,61 @@ export async function POST(req: NextRequest) {
 
     const { user: organizer } = await getCurrentUserOrRedirect();
     const svc = createSupabaseServiceClient();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hackatone.alaasi.dev';
+    const redirectTo = `${siteUrl}/judge`;
 
-    // Check if judge already has a Hackatone account
-    const { data: existing } = await svc
+    // Check if this email is already a judge for this hackathon
+    const { data: existingProfile } = await svc
       .from('profiles')
       .select('id')
       .ilike('email', email)
       .maybeSingle();
 
+    if (existingProfile?.id) {
+      const { data: alreadyAssigned } = await svc
+        .from('judge_assignments')
+        .select('id')
+        .eq('hackathon_id', hackathonId)
+        .eq('judge_id', existingProfile.id)
+        .is('submission_id', null)
+        .maybeSingle();
+
+      if (alreadyAssigned) {
+        return NextResponse.json(
+          { ok: false, error: 'This judge is already assigned to this hackathon.' },
+          { status: 409 },
+        );
+      }
+    }
+
     let judgeId: string;
-    let isNew = false;
 
-    if (existing?.id) {
-      judgeId = existing.id;
+    if (existingProfile?.id) {
+      // Existing account — send a magic sign-in link so they receive an email
+      judgeId = existingProfile.id;
+      const otpRes = await fetch(
+        `${supabaseUrl}/auth/v1/otp?redirect_to=${encodeURIComponent(redirectTo)}`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, create_user: false }),
+        },
+      );
+      if (!otpRes.ok) {
+        const txt = await otpRes.text();
+        return NextResponse.json(
+          { ok: false, error: `Could not send sign-in link: ${txt.slice(0, 200)}` },
+          { status: 400 },
+        );
+      }
     } else {
-      // Invite via Supabase GoTrue — creates the user + sends the email
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hackatone.alaasi.dev';
-
+      // New account — send a Supabase invite email that creates the account
       const inviteRes = await fetch(`${supabaseUrl}/auth/v1/invite`, {
         method: 'POST',
         headers: {
@@ -46,7 +82,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           email,
           data: { role: 'judge' },
-          redirect_to: `${siteUrl}/judge`,
+          redirect_to: redirectTo,
         }),
       });
 
@@ -60,11 +96,13 @@ export async function POST(req: NextRequest) {
 
       const inviteData = (await inviteRes.json()) as { id?: string };
       if (!inviteData.id) {
-        return NextResponse.json({ ok: false, error: 'Invite sent but no user id returned.' }, { status: 500 });
+        return NextResponse.json(
+          { ok: false, error: 'Invite sent but no user id returned.' },
+          { status: 500 },
+        );
       }
 
       judgeId = inviteData.id;
-      isNew = true;
 
       // Upsert a minimal profile in case the trigger hasn't fired yet
       await svc.from('profiles').upsert(
@@ -73,7 +111,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the judge assignment (null submission_id = scores all submissions)
+    // Create the judge assignment (null submission_id = judge scores all submissions)
     const { error: assignErr } = await svc.from('judge_assignments').insert({
       hackathon_id: hackathonId,
       judge_id: judgeId,
@@ -83,12 +121,15 @@ export async function POST(req: NextRequest) {
 
     if (assignErr) {
       if (assignErr.code === '23505') {
-        return NextResponse.json({ ok: false, error: 'This judge is already assigned to this hackathon.' }, { status: 409 });
+        return NextResponse.json(
+          { ok: false, error: 'This judge is already assigned to this hackathon.' },
+          { status: 409 },
+        );
       }
       return NextResponse.json({ ok: false, error: assignErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, isNew });
+    return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
   }

@@ -29,9 +29,7 @@ export function InviteJudgeForm({ hackathonId }: { hackathonId: string }) {
             }
             setMsg({
               kind: 'ok',
-              text: res.isNew
-                ? `Invite sent to ${email}. They'll receive an email to set up their account and start judging.`
-                : `${email} already has an account — added as judge.`,
+              text: `Invite sent to ${email}. They'll receive an email with a link to access the judging interface.`,
             });
             setEmail('');
             router.refresh();
