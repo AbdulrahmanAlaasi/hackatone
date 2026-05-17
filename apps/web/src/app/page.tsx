@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className={styles.ambient1} aria-hidden />
       <div className={styles.ambient2} aria-hidden />
 
-      {/* Corner metadata labels (showcase style) */}
+      {/* Corner metadata labels */}
       <div className={styles.corners}>
         <div className={`${styles.corner} ${styles.tl}`}>
           <span>Project</span>
@@ -29,14 +29,16 @@ export default function HomePage() {
         </svg>
       </Link>
 
-      {/* Center: animated logo + name */}
+      {/* BIG wordmark at the top */}
+      <h1 className={styles.bigName}>Hackatone</h1>
+
+      {/* Center: animated app-icon tile */}
       <div className={styles.center}>
         <div className={styles.logoWrap}>
           <div className={styles.logoSpin}>
-            <LogoIcon />
+            <AppIcon />
           </div>
         </div>
-        <h1 className={styles.bigName}>Hackatone</h1>
       </div>
 
       {/* Bottom action bar */}
@@ -68,56 +70,59 @@ export default function HomePage() {
   );
 }
 
-/* Inlined H mark — lets us animate the spark independently */
-function LogoIcon() {
+/* App-icon tile — cream square + orange H, high contrast against the orange canvas */
+function AppIcon() {
   return (
     <svg
       className={styles.logoSvg}
-      viewBox="0 0 512 512"
+      viewBox="0 0 1024 1024"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Hackatone logo"
+      aria-label="Hackatone app icon"
     >
       <defs>
-        <linearGradient id="og" x1="120" y1="120" x2="390" y2="395" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#FFC68A" />
-          <stop offset="0.55" stopColor="#FF9D4D" />
+        <linearGradient id="og" x1="340" y1="305" x2="685" y2="670" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#FF9D4D" />
+          <stop offset="0.55" stopColor="#FF8A3D" />
           <stop offset="1" stopColor="#E96F26" />
         </linearGradient>
-        <linearGradient id="og2" x1="145" y1="170" x2="365" y2="360" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#D45A18" stopOpacity="0.95" />
+        <linearGradient id="og2" x1="365" y1="365" x2="650" y2="640" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#E96F26" stopOpacity="0.95" />
           <stop offset="1" stopColor="#FF8A3D" stopOpacity="0.85" />
         </linearGradient>
-        <radialGradient id="highlight" cx="0.32" cy="0.28" r="0.55">
-          <stop offset="0" stopColor="rgba(255,255,255,0.55)" />
-          <stop offset="1" stopColor="rgba(255,255,255,0)" />
-        </radialGradient>
+        <filter id="tileShadow" x="80" y="80" width="864" height="864" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="40" stdDeviation="60" floodColor="#1c0e04" floodOpacity="0.3" />
+        </filter>
       </defs>
 
-      <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="url(#og)" />
-      <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="url(#og)" />
-      <path d="M187 169C211 188 232 211 256 237C280 263 301 287 325 306" stroke="url(#og2)" strokeWidth="82" strokeLinecap="round" opacity="0.86" />
-      <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="url(#og)" strokeWidth="68" strokeLinecap="round" />
-      <path d="M187 337C211 318 229 301 256 301C283 301 301 318 325 337" stroke="url(#og)" strokeWidth="58" strokeLinecap="round" />
+      {/* Cream rounded-square tile */}
+      <rect x="172" y="172" width="680" height="680" rx="172" fill="#FFF8EF" filter="url(#tileShadow)" />
 
-      <ellipse cx="160" cy="155" rx="80" ry="20" fill="url(#highlight)" />
+      {/* Orange H mark */}
+      <g transform="translate(256 256)">
+        <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="url(#og)" />
+        <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="url(#og)" />
+        <path d="M187 169C211 188 232 211 256 237C280 263 301 287 325 306" stroke="url(#og2)" strokeWidth="82" strokeLinecap="round" opacity="0.86" />
+        <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="url(#og)" strokeWidth="68" strokeLinecap="round" />
+        <path d="M187 337C211 318 229 301 256 301C283 301 301 318 325 337" stroke="url(#og)" strokeWidth="58" strokeLinecap="round" />
 
-      <circle cx="187" cy="172" r="19" fill="#FFF8EF" />
-      <circle cx="187" cy="337" r="19" fill="#FFF8EF" />
-      <circle cx="256" cy="254" r="19" fill="#FFF8EF" />
-      <circle cx="325" cy="172" r="19" fill="#FFF8EF" />
-      <circle cx="325" cy="337" r="19" fill="#FFF8EF" />
+        <circle cx="187" cy="172" r="19" fill="#FFF8EF" />
+        <circle cx="187" cy="337" r="19" fill="#FFF8EF" />
+        <circle cx="256" cy="254" r="19" fill="#FFF8EF" />
+        <circle cx="325" cy="172" r="19" fill="#FFF8EF" />
+        <circle cx="325" cy="337" r="19" fill="#FFF8EF" />
 
-      <g className={styles.spark} fill="#FFD166">
-        <rect x="287" y="113" width="18" height="18" rx="5" />
-        <rect x="262" y="138" width="14" height="14" rx="4" />
-        <rect x="241" y="164" width="12" height="12" rx="4" />
+        <g className={styles.spark} fill="#FFD166">
+          <rect x="287" y="113" width="18" height="18" rx="5" />
+          <rect x="262" y="138" width="14" height="14" rx="4" />
+          <rect x="241" y="164" width="12" height="12" rx="4" />
+        </g>
+        <path
+          className={styles.sparkBig}
+          d="M371 78C376.614 104.365 381.635 109.386 408 115C381.635 120.614 376.614 125.635 371 152C365.386 125.635 360.365 120.614 334 115C360.365 109.386 365.386 104.365 371 78Z"
+          fill="#FFB02E"
+        />
       </g>
-      <path
-        className={styles.sparkBig}
-        d="M371 78C376.614 104.365 381.635 109.386 408 115C381.635 120.614 376.614 125.635 371 152C365.386 125.635 360.365 120.614 334 115C360.365 109.386 365.386 104.365 371 78Z"
-        fill="#FFB02E"
-      />
     </svg>
   );
 }
