@@ -32,45 +32,43 @@ export default function HomePage() {
       {/* BIG wordmark at the top */}
       <h1 className={styles.bigName}>Hackatone</h1>
 
-      {/* Center: animated app-icon tile */}
+      {/* Center: animated app-icon tile + actions */}
       <div className={styles.center}>
         <div className={styles.logoWrap}>
           <div className={styles.logoSpin}>
             <AppIcon />
           </div>
         </div>
-      </div>
 
-      {/* Bottom action bar */}
-      <div className={styles.bottom}>
-        <div>
-          <Link href="/" className={styles.brand}>
-            <LogoIconSmall className={styles.brandIcon} />
-            Hackatone
-          </Link>
-          <p className={styles.tagline}>
-            Run hackathons end-to-end with AI-balanced teams, QR check-in, judging, and live
-            results.
-          </p>
-        </div>
+        {/* Actions directly under the logo */}
         <div className={styles.actions}>
-          <Link href="/login" className={styles.actionSecondary}>
-            Sign in
-          </Link>
           <Link href="/signup" className={styles.actionPrimary}>
             Create organization
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14" />
               <path d="m12 5 7 7-7 7" />
             </svg>
           </Link>
+          <Link href="/login" className={styles.actionSecondary}>
+            Sign in
+          </Link>
         </div>
+      </div>
+
+      {/* Bottom: small brand + tagline only */}
+      <div className={styles.bottom}>
+        <Link href="/" className={styles.brand}>
+          <LogoIconSmall className={styles.brandIcon} />
+          Hackatone
+        </Link>
+        <p className={styles.tagline}>
+          Run hackathons end-to-end with AI-balanced teams, QR check-in, judging, and live results.
+        </p>
       </div>
     </main>
   );
 }
 
-/* App-icon tile — cream square + orange H, high contrast against the orange canvas */
 function AppIcon() {
   return (
     <svg
@@ -95,10 +93,8 @@ function AppIcon() {
         </filter>
       </defs>
 
-      {/* Cream rounded-square tile */}
       <rect x="172" y="172" width="680" height="680" rx="172" fill="#FFF8EF" filter="url(#tileShadow)" />
 
-      {/* Orange H mark */}
       <g transform="translate(256 256)">
         <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="url(#og)" />
         <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="url(#og)" />

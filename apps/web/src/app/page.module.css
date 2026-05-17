@@ -1,4 +1,4 @@
-/* Showcase landing — full-viewport orange canvas with big wordmark + animated app-icon. */
+/* Showcase landing — full-viewport orange canvas, big wordmark, animated icon, big actions under it. */
 
 .stage {
   min-height: 100vh;
@@ -83,12 +83,11 @@
 }
 .extLink:hover { transform: scale(1.08); }
 
-/* BIG wordmark at the top */
 .bigName {
   position: relative;
   z-index: 4;
   margin: 0;
-  padding-top: clamp(80px, 14vh, 140px);
+  padding-top: clamp(72px, 11vh, 120px);
   font-size: clamp(58px, 11vw, 168px);
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -99,20 +98,21 @@
   animation: fadeUp 900ms ease-out both;
 }
 
-/* Center: app-icon tile */
 .center {
   position: relative;
   z-index: 4;
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 24px 0 120px;
+  padding: 24px 16px 120px;
+  gap: clamp(32px, 5vh, 64px);
 }
 
 .logoWrap {
-  width: clamp(260px, 32vw, 440px);
+  width: clamp(220px, 28vw, 360px);
   aspect-ratio: 1;
   position: relative;
   transform-style: preserve-3d;
@@ -131,18 +131,55 @@
 .spark { transform-origin: 295px 115px; animation: sparkPulse 3.6s ease-in-out infinite; }
 .sparkBig { transform-origin: 371px 115px; animation: sparkRotate 9s linear infinite; }
 
-/* Bottom action bar */
+/* Actions directly under the logo — large, clear */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  animation: fadeUp 900ms 240ms ease-out both;
+}
+.actionPrimary, .actionSecondary {
+  font-size: 17px;
+  font-weight: 800;
+  padding: 18px 32px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  letter-spacing: -0.01em;
+}
+.actionPrimary {
+  background: #fff;
+  color: var(--color-primary-pressed);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+.actionPrimary:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22); }
+.actionPrimary:active { transform: translateY(0); }
+.actionSecondary {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+}
+.actionSecondary:hover { background: rgba(255, 255, 255, 0.24); transform: translateY(-3px); }
+.actionSecondary:active { transform: translateY(0); }
+
 .bottom {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 5;
-  padding: 28px 40px 32px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-  gap: 24px;
+  padding: 24px 40px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: fadeIn 900ms 400ms ease-out both;
 }
 .brand {
   display: flex;
@@ -156,82 +193,28 @@
 }
 .brandIcon { width: 24px; height: 24px; }
 .tagline {
-  margin: 4px 0 0 34px;
+  margin: 0 0 0 34px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 12px;
-  max-width: 320px;
+  max-width: 380px;
   line-height: 1.5;
 }
-.actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.actionPrimary, .actionSecondary {
-  font-size: 14px;
-  font-weight: 800;
-  padding: 12px 22px;
-  border-radius: 999px;
-  text-decoration: none;
-  transition: transform 150ms ease, background-color 150ms ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.actionPrimary {
-  background: #fff;
-  color: var(--color-primary-pressed);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
-}
-.actionPrimary:hover { transform: translateY(-2px); }
-.actionSecondary {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(6px);
-}
-.actionSecondary:hover { background: rgba(255, 255, 255, 0.28); }
 
-/* Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-16px); }
-}
-@keyframes spinY {
-  0%, 100% { transform: rotateY(-10deg) rotateX(2deg); }
-  50%      { transform: rotateY(10deg) rotateX(-2deg); }
-}
-@keyframes sparkPulse {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50%      { opacity: 1; transform: scale(1.18); }
-}
-@keyframes sparkRotate {
-  to { transform: rotate(360deg); }
-}
-@keyframes drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%      { transform: translate(40px, -40px) scale(1.08); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+@keyframes spinY { 0%,100% { transform: rotateY(-10deg) rotateX(2deg); } 50% { transform: rotateY(10deg) rotateX(-2deg); } }
+@keyframes sparkPulse { 0%,100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.18); } }
+@keyframes sparkRotate { to { transform: rotate(360deg); } }
+@keyframes drift { 0%,100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -40px) scale(1.08); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 768px) {
   .corner { font-size: 10px; }
   .tl { top: 20px; left: 20px; }
   .tr { top: 20px; right: 20px; }
   .extLink { top: 18px; right: 20px; }
-  .bigName { padding-top: 90px; font-size: clamp(48px, 16vw, 88px); }
-  .center { padding-bottom: 200px; }
-  .bottom {
-    grid-template-columns: 1fr;
-    padding: 20px 20px 28px;
-  }
-  .actions { justify-content: flex-start; flex-wrap: wrap; }
-  .tagline { display: none; }
+  .bigName { padding-top: 80px; font-size: clamp(48px, 16vw, 88px); }
+  .actionPrimary, .actionSecondary { font-size: 15px; padding: 16px 26px; min-height: 52px; }
+  .center { padding-bottom: 140px; }
+  .bottom { padding: 20px 20px 24px; }
 }
