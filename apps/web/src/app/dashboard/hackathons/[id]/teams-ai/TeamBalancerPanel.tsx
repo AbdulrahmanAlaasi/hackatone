@@ -187,20 +187,22 @@ export function TeamBalancerPanel({
           Configure & apply
         </h3>
         <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <Field label="Number of teams" htmlFor="tc" style={{ width: 160 }}>
-            <Input
-              id="tc"
-              type="number"
-              min={1}
-              max={participants.length}
-              value={teamCount}
-              onChange={(e) => {
-                setApplied(false);
-                setMsg(null);
-                setTeamCount(Math.max(1, Math.min(participants.length, +e.target.value)));
-              }}
-            />
-          </Field>
+          <div style={{ width: 160 }}>
+            <Field label="Number of teams" htmlFor="tc">
+              <Input
+                id="tc"
+                type="number"
+                min={1}
+                max={participants.length}
+                value={teamCount}
+                onChange={(e) => {
+                  setApplied(false);
+                  setMsg(null);
+                  setTeamCount(Math.max(1, Math.min(participants.length, +e.target.value)));
+                }}
+              />
+            </Field>
+          </div>
           <p style={{ color: 'var(--color-text-muted)', fontSize: 13, paddingBottom: 10, margin: 0 }}>
             ~{Math.ceil(participants.length / Math.max(1, teamCount))} members per team
           </p>
