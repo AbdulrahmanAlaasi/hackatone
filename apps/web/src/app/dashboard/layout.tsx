@@ -29,12 +29,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <Link href="/" className={styles.brand}>
-            Hackatone
-          </Link>
-          <NotificationBell />
-        </div>
+        <Link href="/" className={styles.brand}>
+          Hackatone
+        </Link>
         <nav className={styles.nav}>
           {NAV.map((item) => (
             <Link key={item.href} href={item.href} className={styles.navItem}>
@@ -50,7 +47,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <SignOutButton />
         </div>
       </aside>
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}>
+        {/* Notification bell floats at top-right of the content area */}
+        <div className={styles.bellSlot}>
+          <NotificationBell />
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,14 +1,19 @@
 import Link from 'next/link';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import styles from './page.module.css';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const signedIn = !!user;
+
   return (
     <main className={styles.stage}>
-      {/* Ambient blurred lights */}
       <div className={styles.ambient1} aria-hidden />
       <div className={styles.ambient2} aria-hidden />
 
-      {/* Top: big wordmark + tagline */}
       <div className={styles.top}>
         <h1 className={styles.bigName}>Hackatone</h1>
         <p className={styles.tagline}>
@@ -17,7 +22,6 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Center: animated app-icon tile + actions */}
       <div className={styles.center}>
         <div className={styles.logoWrap}>
           <div className={styles.logoSpin}>
@@ -26,17 +30,50 @@ export default function HomePage() {
         </div>
 
         <div className={styles.actions}>
-          <Link href="/signup" className={styles.actionPrimary}>
-            Create organization
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14" />
-              <path d="m12 5 7 7-7 7" />
-            </svg>
+          {signedIn ? (
+            <Link href="/dashboard" className={styles.actionPrimary}>
+              Go to your dashboard
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
+            </Link>
+          ) : (
+            <>
+              <Link href="/signup" className={styles.actionPrimary}>
+                Create organization
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </Link>
+              <Link href="/login" className={styles.actionSecondary}>
+                Sign in
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* What's inside — quick feature chips with deep-links */}
+        <div className={styles.chips}>
+          <Link href={signedIn ? '/dashboard/hackathons/new' : '/signup'} className={styles.chip}>
+            <span className={styles.chipDot} /> Registration & QR
           </Link>
-          <Link href="/login" className={styles.actionSecondary}>
-            Sign in
+          <Link href={signedIn ? '/dashboard' : '/signup'} className={styles.chip}>
+            <span className={styles.chipDot} /> AI team balancer
+          </Link>
+          <Link href={signedIn ? '/dashboard' : '/signup'} className={styles.chip}>
+            <span className={styles.chipDot} /> Judging & leaderboard
           </Link>
         </div>
+
+        <p className={styles.tinyHint}>
+          {signedIn ? (
+            <>Welcome back — your hackathons are one click away.</>
+          ) : (
+            <>Free to set up. Your first hackathon takes about 5 minutes.</>
+          )}
+        </p>
       </div>
     </main>
   );
@@ -65,22 +102,18 @@ function AppIcon() {
           <feDropShadow dx="0" dy="40" stdDeviation="60" floodColor="#1c0e04" floodOpacity="0.3" />
         </filter>
       </defs>
-
       <rect x="172" y="172" width="680" height="680" rx="172" fill="#FFF8EF" filter="url(#tileShadow)" />
-
       <g transform="translate(256 256)">
         <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="url(#og)" />
         <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="url(#og)" />
         <path d="M187 169C211 188 232 211 256 237C280 263 301 287 325 306" stroke="url(#og2)" strokeWidth="82" strokeLinecap="round" opacity="0.86" />
         <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="url(#og)" strokeWidth="68" strokeLinecap="round" />
         <path d="M187 337C211 318 229 301 256 301C283 301 301 318 325 337" stroke="url(#og)" strokeWidth="58" strokeLinecap="round" />
-
         <circle cx="187" cy="172" r="19" fill="#FFF8EF" />
         <circle cx="187" cy="337" r="19" fill="#FFF8EF" />
         <circle cx="256" cy="254" r="19" fill="#FFF8EF" />
         <circle cx="325" cy="172" r="19" fill="#FFF8EF" />
         <circle cx="325" cy="337" r="19" fill="#FFF8EF" />
-
         <g className={styles.spark} fill="#FFD166">
           <rect x="287" y="113" width="18" height="18" rx="5" />
           <rect x="262" y="138" width="14" height="14" rx="4" />

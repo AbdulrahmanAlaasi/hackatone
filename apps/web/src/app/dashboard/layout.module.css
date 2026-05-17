@@ -68,4 +68,18 @@
 .main {
   padding: 0 0 var(--space-8);
   min-width: 0;
+  position: relative;
 }
+
+/* Notification bell floats at the top-right of the content area, never inside the sidebar */
+.bellSlot {
+  position: sticky;
+  top: var(--space-4);
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-3) var(--space-4) 0 0;
+  margin-bottom: calc(-1 * var(--space-3));
+  pointer-events: none;
+}
+.bellSlot > * { pointer-events: auto; }

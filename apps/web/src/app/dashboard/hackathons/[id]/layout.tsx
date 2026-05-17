@@ -39,6 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/tracks', label: 'Tracks', icon: 'ChevronRight' },
       { href: '/criteria', label: 'Judging criteria', icon: 'ChevronRight' },
       { href: '/announcements', label: 'Announcements', icon: 'MessageCircle' },
+      { href: '/chat', label: 'Chat', icon: 'MessageCircle' },
     ],
   },
 ];
