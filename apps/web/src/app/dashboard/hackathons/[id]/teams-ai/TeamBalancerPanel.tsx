@@ -21,6 +21,7 @@ const LEVEL_RANK: Record<NonNullable<Participant['ai_level']>, number> = {
   intermediate: 2,
   beginner: 1,
 };
+
 const LEVEL_TONE: Record<NonNullable<Participant['ai_level']>, 'success' | 'info' | 'warning' | 'neutral'> = {
   expert: 'success',
   advanced: 'success',
@@ -28,7 +29,6 @@ const LEVEL_TONE: Record<NonNullable<Participant['ai_level']>, 'success' | 'info
   beginner: 'warning',
 };
 
-// Snake-draft N participants into K teams. Participants are pre-sorted strongest-first.
 function snakeDraft<T>(items: T[], teamCount: number): T[][] {
   const teams: T[][] = Array.from({ length: teamCount }, () => []);
   let idx = 0;
@@ -39,6 +39,68 @@ function snakeDraft<T>(items: T[], teamCount: number): T[][] {
     else idx += dir;
   }
   return teams;
+}
+
+function SkillPill({ label }: { label: string }) {
+  return (
+    <span style={{
+      fontSize: 11,
+      fontWeight: 700,
+      background: 'var(--color-surface-soft)',
+      padding: '2px 8px',
+      borderRadius: 999,
+      color: 'var(--color-primary-pressed)',
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function ParticipantRow({ p, teamLabel }: { p: Participant; teamLabel?: string }) {
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 12,
+      padding: '12px 0',
+      borderBottom: '1px solid var(--color-border)',
+    }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <strong style={{ fontSize: 'var(--font-size-body)' }}>{p.full_name}</strong>
+          {teamLabel && (
+            <span style={{
+              fontSize: 11,
+              fontWeight: 700,
+              background: 'var(--color-primary)',
+              color: '#fff',
+              padding: '2px 8px',
+              borderRadius: 999,
+            }}>
+              {teamLabel}
+            </span>
+          )}
+        </div>
+        {p.ai_summary && (
+          <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: 13, lineHeight: 1.5 }}>
+            {p.ai_summary}
+          </p>
+        )}
+        {p.ai_skills.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+            {p.ai_skills.slice(0, 6).map((s) => <SkillPill key={s} label={s} />)}
+          </div>
+        )}
+      </div>
+      <div style={{ flexShrink: 0 }}>
+        {p.ai_level
+          ? <Badge tone={LEVEL_TONE[p.ai_level]}>{p.ai_level}</Badge>
+          : <Badge tone="neutral">no CV</Badge>
+        }
+      </div>
+    </div>
+  );
 }
 
 export function TeamBalancerPanel({
@@ -53,37 +115,49 @@ export function TeamBalancerPanel({
   participants: Participant[];
 }) {
   const router = useRouter();
-  const [targetSize, setTargetSize] = useState(Math.max(minSize, Math.min(4, maxSize)));
-  const [namePrefix, setNamePrefix] = useState('Team');
+  const defaultTeamCount = Math.max(1, Math.ceil(participants.length / Math.max(minSize, Math.min(4, maxSize))));
+  const [teamCount, setTeamCount] = useState(defaultTeamCount);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [applied, setApplied] = useState(false);
 
-  const teams = useMemo(() => {
-    if (participants.length === 0) return [];
-    const teamCount = Math.max(1, Math.ceil(participants.length / targetSize));
-    // Strongest first; un-analyzed (null) treated as 0 — appended last
-    const sorted = [...participants].sort(
-      (a, b) => (b.ai_level ? LEVEL_RANK[b.ai_level] : 0) - (a.ai_level ? LEVEL_RANK[a.ai_level] : 0),
-    );
-    return snakeDraft(sorted, teamCount);
-  }, [participants, targetSize]);
+  // Sort strongest first; unanalyzed appended last
+  const sorted = useMemo(() =>
+    [...participants].sort(
+      (a, b) => (b.ai_level ? LEVEL_RANK[b.ai_level] : 0) - (a.ai_level ? LEVEL_RANK[a.ai_level] : 0)
+    ),
+    [participants]
+  );
 
-  async function apply() {
+  const teams = useMemo(() => snakeDraft(sorted, Math.max(1, teamCount)), [sorted, teamCount]);
+
+  // Map user_id → team label for the participant roster
+  const teamLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    teams.forEach((members, i) => {
+      members.forEach((m) => { map[m.user_id] = `Team ${i + 1}`; });
+    });
+    return map;
+  }, [teams]);
+
+  function apply() {
     setMsg(null);
     start(() => {
       void (async () => {
         const payload = teams.map((members, i) => ({
-          name: `${namePrefix} ${i + 1}`,
+          name: `Team ${i + 1}`,
           memberUserIds: members.map((m) => m.user_id),
         }));
         const res = await fetch('/api/teams/apply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hackathonId, teams: payload }),
+          body: JSON.stringify({ hackathonId, teams: payload, reset: true }),
         }).then((r) => r.json());
-        if (!res.ok) setMsg({ kind: 'err', text: res.error });
-        else {
-          setMsg({ kind: 'ok', text: `Created ${res.created} team${res.created === 1 ? '' : 's'}.` });
+        if (!res.ok) {
+          setMsg({ kind: 'err', text: res.error ?? 'Something went wrong.' });
+        } else {
+          setMsg({ kind: 'ok', text: `${res.created} team${res.created === 1 ? '' : 's'} created successfully.` });
+          setApplied(true);
           router.refresh();
         }
       })();
@@ -92,114 +166,104 @@ export function TeamBalancerPanel({
 
   return (
     <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
+
+      {/* ── Participant roster ── */}
       <Card>
-        <div style={{ display: 'grid', gap: 'var(--space-3)', gridTemplateColumns: 'auto 1fr 1fr auto', alignItems: 'end' }}>
-          <Field label={`Team size (${minSize}-${maxSize})`} htmlFor="ts">
-            <Input
-              id="ts"
-              type="number"
-              min={minSize}
-              max={maxSize}
-              value={targetSize}
-              onChange={(e) => setTargetSize(Math.max(minSize, Math.min(maxSize, +e.target.value)))}
-            />
-          </Field>
-          <Field label="Team name prefix" htmlFor="np">
-            <Input id="np" value={namePrefix} onChange={(e) => setNamePrefix(e.target.value)} />
-          </Field>
-          <div style={{ color: 'var(--color-text-muted)', paddingBottom: 12 }}>
-            Suggested: <strong>{teams.length}</strong> team{teams.length === 1 ? '' : 's'}
-          </div>
-          <Button onClick={apply} loading={pending}>
-            Apply (create teams)
-          </Button>
-        </div>
-        {msg ? (
-          <p
-            style={{
-              marginTop: 'var(--space-3)',
-              background: msg.kind === 'ok' ? 'var(--color-success)' : 'var(--color-warning)',
-              color: msg.kind === 'ok' ? 'var(--color-success-text)' : 'var(--color-warning-text)',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-sm)',
-              fontWeight: 700,
-            }}
-          >
-            {msg.text}
-          </p>
-        ) : null}
+        <h3 style={{ margin: '0 0 4px', fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>
+          Accepted participants
+        </h3>
+        <p style={{ margin: '0 0 12px', color: 'var(--color-text-muted)', fontSize: 13 }}>
+          Each participant is shown with their AI-extracted skill level and summary from their CV.
+          The colored tag shows which team they'll be assigned to.
+        </p>
+        {sorted.map((p) => (
+          <ParticipantRow key={p.user_id} p={p} teamLabel={teamLabelMap[p.user_id]} />
+        ))}
       </Card>
 
-      <div
-        style={{
-          display: 'grid',
-          gap: 'var(--space-3)',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        }}
-      >
+      {/* ── Team config + apply ── */}
+      <Card>
+        <h3 style={{ margin: '0 0 12px', fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>
+          Configure & apply
+        </h3>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <Field label="Number of teams" htmlFor="tc" style={{ width: 160 }}>
+            <Input
+              id="tc"
+              type="number"
+              min={1}
+              max={participants.length}
+              value={teamCount}
+              onChange={(e) => {
+                setApplied(false);
+                setMsg(null);
+                setTeamCount(Math.max(1, Math.min(participants.length, +e.target.value)));
+              }}
+            />
+          </Field>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 13, paddingBottom: 10, margin: 0 }}>
+            ~{Math.ceil(participants.length / Math.max(1, teamCount))} members per team
+          </p>
+          <Button onClick={apply} loading={pending} style={{ marginBottom: 2 }}>
+            {applied ? 'Re-apply (recreate teams)' : 'Apply (create teams)'}
+          </Button>
+        </div>
+
+        {msg && (
+          <p style={{
+            marginTop: 12,
+            background: msg.kind === 'ok' ? 'var(--color-success)' : 'var(--color-warning)',
+            color: msg.kind === 'ok' ? 'var(--color-success-text)' : 'var(--color-warning-text)',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-sm)',
+            fontWeight: 700,
+            fontSize: 14,
+          }}>
+            {msg.text}
+          </p>
+        )}
+      </Card>
+
+      {/* ── Team preview cards ── */}
+      <h3 style={{ margin: 0, fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>
+        Suggested team layout
+      </h3>
+      <div style={{
+        display: 'grid',
+        gap: 'var(--space-3)',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      }}>
         {teams.map((members, i) => (
           <Card key={i}>
-            <h3 style={{ margin: 0, fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>
-              {namePrefix} {i + 1}
-            </h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-caption)', marginTop: 4 }}>
+            <h4 style={{ margin: '0 0 2px', fontSize: 'var(--font-size-h3)', fontWeight: 800 }}>
+              Team {i + 1}
+            </h4>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginTop: 0, marginBottom: 12 }}>
               {members.length} member{members.length === 1 ? '' : 's'}
             </p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 'var(--space-3) 0 0', display: 'grid', gap: 'var(--space-2)' }}>
-              {members.map((m) => (
-                <li
-                  key={m.user_id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: 'var(--space-2)',
-                    paddingBottom: 'var(--space-2)',
-                    borderBottom: '1px solid var(--color-border)',
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <strong>{m.full_name}</strong>
-                    {m.ai_summary ? (
-                      <p
-                        style={{
-                          margin: '2px 0 0',
-                          color: 'var(--color-text-muted)',
-                          fontSize: 'var(--font-size-caption)',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {m.ai_summary}
-                      </p>
-                    ) : null}
-                    {m.ai_skills.length > 0 ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
-                        {m.ai_skills.slice(0, 5).map((s) => (
-                          <span
-                            key={s}
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              background: 'var(--color-surface-soft)',
-                              padding: '2px 8px',
-                              borderRadius: 999,
-                              color: 'var(--color-primary-pressed)',
-                            }}
-                          >
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                  {m.ai_level ? (
-                    <Badge tone={LEVEL_TONE[m.ai_level]}>{m.ai_level}</Badge>
-                  ) : (
-                    <Badge tone="neutral">no CV</Badge>
+            {members.map((m) => (
+              <div key={m.user_id} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 0',
+                borderBottom: '1px solid var(--color-border)',
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <strong style={{ fontSize: 14 }}>{m.full_name}</strong>
+                  {m.ai_skills.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 4 }}>
+                      {m.ai_skills.slice(0, 4).map((s) => <SkillPill key={s} label={s} />)}
+                    </div>
                   )}
-                </li>
-              ))}
-            </ul>
+                </div>
+                {m.ai_level
+                  ? <Badge tone={LEVEL_TONE[m.ai_level]}>{m.ai_level}</Badge>
+                  : <Badge tone="neutral">no CV</Badge>
+                }
+              </div>
+            ))}
           </Card>
         ))}
       </div>
