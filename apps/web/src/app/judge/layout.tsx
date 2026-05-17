@@ -21,14 +21,14 @@ export default async function JudgeLayout({ children }: { children: ReactNode })
     .limit(1)
     .maybeSingle();
   if (!judging) {
-    // Not a judge — check if they're an organizer
+    // Not a judge — figure out where they should go
     const { data: org } = await supabase
       .from('organization_members')
       .select('id')
       .eq('user_id', user.id)
       .limit(1)
       .maybeSingle();
-    redirect(org ? '/dashboard' : '/');
+    redirect(org ? '/dashboard' : '/welcome');
   }
 
   const { data: profile } = await supabase

@@ -23,7 +23,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     supabase.from('judge_assignments').select('id').eq('judge_id', user.id).limit(1).maybeSingle(),
   ]);
 
-  if (!orgMember && judgeAssigned) redirect('/judge');
+  // Role gate: /dashboard is for organization members only.
+  //  - No org but judge assignment → /judge
+  //  - No org, no judge → /welcome (participant — they use the mobile app)
+  if (!orgMember) {
+    if (judgeAssigned) redirect('/judge');
+    redirect('/welcome');
+  }
 
   return (
     <div className={styles.shell}>
