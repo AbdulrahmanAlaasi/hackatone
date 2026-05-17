@@ -1,11 +1,12 @@
 import { Card, Container } from '@/components/ui';
+import { AnalysisProgress } from './AnalysisProgress';
 
 export default async function RegistrationSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ hackathon?: string }>;
+  searchParams: Promise<{ hackathon?: string; email?: string }>;
 }) {
-  const { hackathon } = await searchParams;
+  const { hackathon, email } = await searchParams;
   return (
     <main style={{ padding: '64px 0' }}>
       <Container size="form">
@@ -26,6 +27,8 @@ export default async function RegistrationSuccessPage({
             <li>Once accepted, the hackathon will appear in your app with your QR code.</li>
           </ol>
         </Card>
+
+        {email ? <AnalysisProgress email={email} /> : null}
       </Container>
     </main>
   );

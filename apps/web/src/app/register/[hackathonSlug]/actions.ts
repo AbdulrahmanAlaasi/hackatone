@@ -12,6 +12,26 @@ function base64ToUint8Array(b64: string): Uint8Array {
   return out;
 }
 
+/**
+ * Schedule background work on Cloudflare via `ctx.waitUntil` if available,
+ * otherwise fall through (Node dev server / other runtimes). The promise will
+ * still run; on Workers, this keeps the isolate alive past the response.
+ */
+async function scheduleBackground(p: Promise<unknown>) {
+  try {
+    const mod = await import('@cloudflare/next-on-pages');
+    const ctx = (mod as any).getRequestContext?.();
+    if (ctx?.ctx?.waitUntil) {
+      ctx.ctx.waitUntil(p);
+      return;
+    }
+  } catch {
+    /* not on Cloudflare — fall through */
+  }
+  // Best-effort fire-and-forget (locally fine; on workers the response may already be sent)
+  p.catch((err) => console.error('[scheduleBackground]', err));
+}
+
 export interface RegisterInput {
   hackathonId: string;
   hackathonSlug: string;
@@ -28,40 +48,48 @@ export interface RegisterInput {
   teamPreference: string | null;
 }
 
+/**
+ * Fast registration: auth user + CV upload + DB inserts only.
+ * Returns success in a few seconds so the participant sees the success page quickly.
+ *
+ * The Claude Haiku CV analysis is scheduled in the background via `ctx.waitUntil`
+ * so it finishes after the response is sent.
+ */
 export async function submitRegistration(input: RegisterInput, cvDataUrl: string) {
   const svc = createSupabaseServiceClient();
 
   // ------------------------------------------------------------
-  // 1. Create or look up the auth user
+  // 1. Create or look up the auth user (fast path)
   // ------------------------------------------------------------
   let userId: string | null = null;
-  // listUsers paginates; check by email directly
-  const { data: existingList } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
-  const existing = existingList?.users.find(
-    (u) => u.email?.toLowerCase() === input.email.toLowerCase(),
-  );
 
-  if (existing) {
-    userId = existing.id;
-  } else {
-    const { data: created, error: createErr } = await svc.auth.admin.createUser({
-      email: input.email,
-      password: input.password,
-      email_confirm: true,
-      user_metadata: { full_name: input.fullName },
-    });
-    if (createErr || !created.user) {
-      return { ok: false as const, error: createErr?.message ?? 'Could not create account' };
-    }
+  // Try to create first; if conflict, fall back to listUsers lookup
+  const { data: created, error: createErr } = await svc.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { full_name: input.fullName },
+  });
+
+  if (created?.user) {
     userId = created.user.id;
+  } else if (createErr) {
+    const msg = (createErr.message || '').toLowerCase();
+    if (msg.includes('already') || msg.includes('registered') || msg.includes('exists')) {
+      // existing user — look it up
+      const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
+      userId =
+        list?.users.find((u) => u.email?.toLowerCase() === input.email.toLowerCase())?.id ?? null;
+      if (!userId) return { ok: false as const, error: 'Account exists but could not be resolved.' };
+    } else {
+      return { ok: false as const, error: createErr.message };
+    }
   }
-
   if (!userId) return { ok: false as const, error: 'No user id resolved' };
 
   // ------------------------------------------------------------
   // 2. Upload the CV to private bucket as `<userId>/cv.pdf`
   // ------------------------------------------------------------
-  // cvDataUrl is "data:application/pdf;base64,...." — split it.
   const match = cvDataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) return { ok: false as const, error: 'Invalid CV upload' };
   const contentType = match[1]!;
@@ -74,57 +102,88 @@ export async function submitRegistration(input: RegisterInput, cvDataUrl: string
     .upload(path, cvBytes, { contentType, upsert: true });
   if (uploadErr) return { ok: false as const, error: `CV upload failed: ${uploadErr.message}` };
 
-  // Signed URL valid for 1 year — used by AI analysis and by organizer review.
   const { data: signed } = await svc.storage.from('cvs').createSignedUrl(path, 60 * 60 * 24 * 365);
   const cvUrl = signed?.signedUrl ?? null;
 
   // ------------------------------------------------------------
-  // 3. Update profile with CV url + profile fields
+  // 3. Update profile + insert registration (parallel)
   // ------------------------------------------------------------
-  await svc
-    .from('profiles')
-    .update({
-      cv_url: cvUrl,
+  const [profileRes, regRes] = await Promise.all([
+    svc
+      .from('profiles')
+      .update({
+        cv_url: cvUrl,
+        phone: input.phone,
+        organization_or_company: input.organizationOrCompany,
+        major_or_job_title: input.majorOrJobTitle,
+        skill_level: input.skillLevel,
+        skills: input.skills,
+        github_url: input.githubUrl,
+      })
+      .eq('id', userId),
+    svc.from('registrations').insert({
+      hackathon_id: input.hackathonId,
+      user_id: userId,
+      full_name: input.fullName,
+      email: input.email,
       phone: input.phone,
       organization_or_company: input.organizationOrCompany,
       major_or_job_title: input.majorOrJobTitle,
       skill_level: input.skillLevel,
       skills: input.skills,
+      preferred_track_id: input.preferredTrackId,
       github_url: input.githubUrl,
-    })
-    .eq('id', userId);
+      team_preference: input.teamPreference,
+      status: 'pending',
+    }),
+  ]);
 
-  // ------------------------------------------------------------
-  // 4. Insert registration (link_registration trigger will fill user_id by email, but we set it too)
-  // ------------------------------------------------------------
-  const { error: regErr } = await svc.from('registrations').insert({
-    hackathon_id: input.hackathonId,
-    user_id: userId,
-    full_name: input.fullName,
-    email: input.email,
-    phone: input.phone,
-    organization_or_company: input.organizationOrCompany,
-    major_or_job_title: input.majorOrJobTitle,
-    skill_level: input.skillLevel,
-    skills: input.skills,
-    preferred_track_id: input.preferredTrackId,
-    github_url: input.githubUrl,
-    team_preference: input.teamPreference,
-    status: 'pending',
-  });
-  if (regErr) {
-    if (regErr.code === '23505') {
+  if (regRes.error) {
+    if (regRes.error.code === '23505') {
       return { ok: false as const, error: 'This email is already registered for this hackathon.' };
     }
-    return { ok: false as const, error: regErr.message };
+    return { ok: false as const, error: regRes.error.message };
   }
+  // profileRes errors are non-fatal — registration still succeeded
+  if (profileRes.error) console.warn('[register] profile update warning:', profileRes.error.message);
 
   // ------------------------------------------------------------
-  // 5. Kick off CV analysis (blocking — Claude Haiku is fast enough)
+  // 4. Schedule the CV analysis in the BACKGROUND
+  //    The response returns immediately; Claude Haiku runs after.
   // ------------------------------------------------------------
   if (cvUrl) {
-    await analyzeCv(userId, cvUrl);
+    await scheduleBackground(analyzeCv(userId, cvUrl));
   }
 
   return { ok: true as const };
+}
+
+/**
+ * Allow the success page to poll for analysis completion / re-trigger if needed.
+ */
+export async function getAnalysisStatus(email: string) {
+  const svc = createSupabaseServiceClient();
+  const { data: list } = await svc.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const u = list?.users.find((x) => x.email?.toLowerCase() === email.toLowerCase());
+  if (!u) return { state: 'missing' as const };
+  const { data: p } = await svc
+    .from('profiles')
+    .select('cv_url, ai_level, ai_skills, ai_summary, ai_analyzed_at')
+    .eq('id', u.id)
+    .maybeSingle();
+  if (!p) return { state: 'missing' as const };
+  if (p.ai_analyzed_at) {
+    return {
+      state: 'done' as const,
+      level: p.ai_level,
+      skills: p.ai_skills,
+      summary: p.ai_summary,
+    };
+  }
+  // If no analysis after a while and CV exists, re-kick
+  if (p.cv_url) {
+    await scheduleBackground(analyzeCv(u.id, p.cv_url));
+    return { state: 'pending' as const };
+  }
+  return { state: 'no_cv' as const };
 }

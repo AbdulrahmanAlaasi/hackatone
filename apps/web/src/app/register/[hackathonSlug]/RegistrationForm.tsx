@@ -116,8 +116,9 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       return;
     }
 
+    const successEmail = encodeURIComponent(form.email.trim().toLowerCase());
     router.push(
-      `/registration-success?hackathon=${encodeURIComponent(hackathonTitle)}&slug=${hackathonSlug}`,
+      `/registration-success?hackathon=${encodeURIComponent(hackathonTitle)}&slug=${hackathonSlug}&email=${successEmail}`,
     );
   }
 
@@ -246,7 +247,7 @@ export function RegistrationForm({ hackathonId, hackathonSlug, hackathonTitle, t
       ) : null}
 
       <Button type="submit" fullWidth loading={loading}>
-        {loading ? 'Submitting & analyzing CV…' : 'Submit registration'}
+        {loading ? 'Submitting…' : 'Submit registration'}
       </Button>
       <p style={{ fontSize: 'var(--font-size-caption)', color: 'var(--color-text-muted)', margin: 0 }}>
         Your registration starts as <strong>pending</strong>. Organizers will accept or decline it.
