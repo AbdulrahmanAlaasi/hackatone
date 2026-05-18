@@ -20,9 +20,18 @@ export async function POST(req: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hackatone.alaasi.dev';
-    const redirectTo = `${siteUrl}/judge`;
 
-    // Check if this email is already a judge for this hackathon
+    // Get hackathon slug for the access URL
+    const { data: hackathon } = await svc
+      .from('hackathons')
+      .select('slug')
+      .eq('id', hackathonId)
+      .maybeSingle();
+    if (!hackathon) {
+      return NextResponse.json({ ok: false, error: 'Hackathon not found.' }, { status: 404 });
+    }
+
+    // Check if already assigned
     const { data: existingProfile } = await svc
       .from('profiles')
       .select('id')
@@ -46,33 +55,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Resolve or create a shadow user (no invite email — judge accesses via token link)
     let judgeId: string;
 
     if (existingProfile?.id) {
-      // Existing account — send a magic sign-in link so they receive an email
       judgeId = existingProfile.id;
-      const otpRes = await fetch(
-        `${supabaseUrl}/auth/v1/otp?redirect_to=${encodeURIComponent(redirectTo)}`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: serviceKey,
-            Authorization: `Bearer ${serviceKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, create_user: false }),
-        },
-      );
-      if (!otpRes.ok) {
-        const txt = await otpRes.text();
-        return NextResponse.json(
-          { ok: false, error: `Could not send sign-in link: ${txt.slice(0, 200)}` },
-          { status: 400 },
-        );
-      }
     } else {
-      // New account — send a Supabase invite email that creates the account
-      const inviteRes = await fetch(`${supabaseUrl}/auth/v1/invite`, {
+      // Create shadow user via GoTrue admin (email_confirm=true, random password — no email sent)
+      const randomPassword = Array.from(crypto.getRandomValues(new Uint8Array(24)))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const createRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
         method: 'POST',
         headers: {
           apikey: serviceKey,
@@ -81,43 +75,55 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           email,
-          data: { role: 'judge' },
-          redirect_to: redirectTo,
+          password: randomPassword,
+          email_confirm: true,
+          user_metadata: { role: 'judge' },
         }),
       });
 
-      if (!inviteRes.ok) {
-        const txt = await inviteRes.text();
-        return NextResponse.json(
-          { ok: false, error: `Could not send invite: ${txt.slice(0, 200)}` },
-          { status: 400 },
+      if (!createRes.ok) {
+        const txt = await createRes.text();
+        // User might already exist in auth but not profiles — try to get them
+        if (txt.includes('already')) {
+          const { data: retry } = await svc
+            .from('profiles')
+            .select('id')
+            .ilike('email', email)
+            .maybeSingle();
+          if (retry?.id) {
+            judgeId = retry.id;
+          } else {
+            return NextResponse.json({ ok: false, error: `Could not create judge account: ${txt.slice(0, 200)}` }, { status: 400 });
+          }
+        } else {
+          return NextResponse.json({ ok: false, error: `Could not create judge account: ${txt.slice(0, 200)}` }, { status: 400 });
+        }
+      } else {
+        const userData = (await createRes.json()) as { id?: string };
+        if (!userData.id) {
+          return NextResponse.json({ ok: false, error: 'No user id returned.' }, { status: 500 });
+        }
+        judgeId = userData.id;
+
+        // Upsert minimal profile (trigger may not have fired yet)
+        await svc.from('profiles').upsert(
+          { id: judgeId, full_name: email.split('@')[0], email },
+          { onConflict: 'id', ignoreDuplicates: true },
         );
       }
-
-      const inviteData = (await inviteRes.json()) as { id?: string };
-      if (!inviteData.id) {
-        return NextResponse.json(
-          { ok: false, error: 'Invite sent but no user id returned.' },
-          { status: 500 },
-        );
-      }
-
-      judgeId = inviteData.id;
-
-      // Upsert a minimal profile in case the trigger hasn't fired yet
-      await svc.from('profiles').upsert(
-        { id: judgeId, full_name: email.split('@')[0], email },
-        { onConflict: 'id', ignoreDuplicates: true },
-      );
     }
 
-    // Create the judge assignment (null submission_id = judge scores all submissions)
-    const { error: assignErr } = await svc.from('judge_assignments').insert({
-      hackathon_id: hackathonId,
-      judge_id: judgeId,
-      submission_id: null,
-      assigned_by: organizer.id,
-    });
+    // Create judge assignment — the assignment ID becomes the access token
+    const { data: assignment, error: assignErr } = await svc
+      .from('judge_assignments')
+      .insert({
+        hackathon_id: hackathonId,
+        judge_id: judgeId,
+        submission_id: null,
+        assigned_by: organizer.id,
+      })
+      .select('id')
+      .single();
 
     if (assignErr) {
       if (assignErr.code === '23505') {
@@ -129,7 +135,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: assignErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    const accessLink = `${siteUrl}/${hackathon.slug}/judge/${assignment.id}`;
+    return NextResponse.json({ ok: true, link: accessLink });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
   }
