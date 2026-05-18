@@ -80,6 +80,11 @@ export const Icon = {
       <Line x1="3" x2="21" y1="10" y2="10" />
     </Svg>
   ),
+  ChevronDown: (p: Props) => (
+    <Svg {...defaults(p)}>
+      <Path d="m6 9 6 6 6-6" />
+    </Svg>
+  ),
   Check: (p: Props) => (
     <Svg {...defaults(p)}>
       <Path d="M20 6 9 17l-5-5" />

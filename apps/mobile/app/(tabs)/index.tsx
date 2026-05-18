@@ -83,6 +83,7 @@ export default function HomeScreen() {
   const [publicHackathons, setPublicHackathons] = useState<PublicHackathon[]>([]);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [publicExpanded, setPublicExpanded] = useState(true);
 
   const load = useCallback(async () => {
     if (!user?.email) return;
@@ -272,80 +273,125 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
-          <H3 style={{ marginBottom: tokens.space[3] }}>Public hackathons</H3>
-
-          {publicHackathons.length === 0 ? (
-            <Card tone="cream">
-              <H3>No public hackathons open</H3>
-              <P style={{ color: tokens.color.textMuted, marginTop: tokens.space[2] }}>
-                Check back soon for new registration opportunities.
-              </P>
-            </Card>
-          ) : (
-            publicHackathons.map((hackathon) => {
-              const status = registeredByHackathonId[hackathon.id];
-              const applyUrl = `${PUBLIC_WEB_URL}/register/${hackathon.slug}`;
-
-              return (
-                <Card key={hackathon.id} tone="surface" style={{ marginBottom: tokens.space[3], overflow: 'hidden' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
-                    <Badge tone={status ? 'info' : 'success'}>{status ? `registered: ${status}` : 'open'}</Badge>
-                    {hackathon.field ? <Muted numberOfLines={1}>{hackathon.field}</Muted> : null}
-                  </View>
-
-                  <H2 style={{ marginTop: tokens.space[3], marginBottom: 4 }}>{hackathon.title}</H2>
-                  <Muted numberOfLines={1}>By {organizationName(hackathon.organizations)}</Muted>
-
-                  {hackathon.description ? (
-                    <P style={{ marginTop: tokens.space[3], color: tokens.color.textMuted }} numberOfLines={3}>
-                      {hackathon.description}
-                    </P>
-                  ) : (
-                    <P style={{ marginTop: tokens.space[3], color: tokens.color.textMuted }}>
-                      Registration is open for this public hackathon.
-                    </P>
-                  )}
-
-                  <View style={{ gap: 8, marginTop: tokens.space[4] }}>
-                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                      <Icon.Pin size={16} color={tokens.color.textMuted} />
-                      <Muted style={{ flex: 1 }} numberOfLines={1}>{hackathon.location ?? 'Location TBA'}</Muted>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                      <Icon.Calendar size={16} color={tokens.color.textMuted} />
-                      <Muted>
-                        {formatDate(hackathon.starts_at) ?? 'Date TBA'}
-                        {hackathon.registration_deadline ? ` - Apply by ${formatDate(hackathon.registration_deadline)}` : ''}
-                      </Muted>
-                    </View>
-                  </View>
-
-                  <Pressable
-                    onPress={() => Linking.openURL(applyUrl)}
-                    disabled={!!status}
-                    style={({ pressed }) => [
-                      {
-                        marginTop: tokens.space[4],
-                        borderRadius: tokens.radius.full,
-                        paddingVertical: 14,
-                        alignItems: 'center',
-                        backgroundColor: status ? tokens.color.surfaceSoft : tokens.color.primary,
-                        transform: pressed && !status ? [{ scale: 0.97 }] : [],
-                      },
-                    ]}
-                  >
-                    <P style={{ color: status ? tokens.color.text : '#fff', fontWeight: '800' }}>
-                      {status ? 'Already applied' : 'Apply now'}
-                    </P>
-                  </Pressable>
-
-                  <Muted numberOfLines={1} style={{ marginTop: tokens.space[2], textAlign: 'center' }}>
-                    {applyUrl}
+          <Pressable
+            onPress={() => setPublicExpanded((value) => !value)}
+            style={({ pressed }) => [{ opacity: pressed ? 0.86 : 1 }]}
+          >
+            <Card tone="cream" style={{ marginBottom: publicExpanded ? tokens.space[3] : 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}>
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 18,
+                    backgroundColor: '#FFD8B8',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon.Rocket size={24} color={tokens.color.primaryPressed} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <H3>Browse public hackathons</H3>
+                  <Muted numberOfLines={1}>
+                    {openPublicCount > 0
+                      ? `${openPublicCount} open to apply`
+                      : publicHackathons.length > 0
+                      ? 'You already applied to all visible hackathons'
+                      : 'No open public hackathons yet'}
                   </Muted>
-                </Card>
-              );
-            })
-          )}
+                </View>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    backgroundColor: tokens.color.surface,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transform: publicExpanded ? [{ rotate: '180deg' }] : [],
+                  }}
+                >
+                  <Icon.ChevronDown size={20} color={tokens.color.primaryPressed} />
+                </View>
+              </View>
+            </Card>
+          </Pressable>
+
+          {publicExpanded ? (
+            publicHackathons.length === 0 ? (
+              <Card tone="surface">
+                <H3>No public hackathons open</H3>
+                <P style={{ color: tokens.color.textMuted, marginTop: tokens.space[2] }}>
+                  Check back soon for new registration opportunities.
+                </P>
+              </Card>
+            ) : (
+              publicHackathons.map((hackathon) => {
+                const status = registeredByHackathonId[hackathon.id];
+                const applyUrl = `${PUBLIC_WEB_URL}/register/${hackathon.slug}`;
+
+                return (
+                  <Card key={hackathon.id} tone="surface" style={{ marginBottom: tokens.space[3], overflow: 'hidden' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: tokens.space[3] }}>
+                      <Badge tone={status ? 'info' : 'success'}>{status ? `registered: ${status}` : 'open'}</Badge>
+                      {hackathon.field ? <Muted numberOfLines={1}>{hackathon.field}</Muted> : null}
+                    </View>
+
+                    <H2 style={{ marginTop: tokens.space[3], marginBottom: 4 }}>{hackathon.title}</H2>
+                    <Muted numberOfLines={1}>By {organizationName(hackathon.organizations)}</Muted>
+
+                    {hackathon.description ? (
+                      <P style={{ marginTop: tokens.space[3], color: tokens.color.textMuted }} numberOfLines={3}>
+                        {hackathon.description}
+                      </P>
+                    ) : (
+                      <P style={{ marginTop: tokens.space[3], color: tokens.color.textMuted }}>
+                        Registration is open for this public hackathon.
+                      </P>
+                    )}
+
+                    <View style={{ gap: 8, marginTop: tokens.space[4] }}>
+                      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                        <Icon.Pin size={16} color={tokens.color.textMuted} />
+                        <Muted style={{ flex: 1 }} numberOfLines={1}>{hackathon.location ?? 'Location TBA'}</Muted>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                        <Icon.Calendar size={16} color={tokens.color.textMuted} />
+                        <Muted>
+                          {formatDate(hackathon.starts_at) ?? 'Date TBA'}
+                          {hackathon.registration_deadline ? ` - Apply by ${formatDate(hackathon.registration_deadline)}` : ''}
+                        </Muted>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      onPress={() => Linking.openURL(applyUrl)}
+                      disabled={!!status}
+                      style={({ pressed }) => [
+                        {
+                          marginTop: tokens.space[4],
+                          borderRadius: tokens.radius.full,
+                          paddingVertical: 14,
+                          alignItems: 'center',
+                          backgroundColor: status ? tokens.color.surfaceSoft : tokens.color.primary,
+                          transform: pressed && !status ? [{ scale: 0.97 }] : [],
+                        },
+                      ]}
+                    >
+                      <P style={{ color: status ? tokens.color.text : '#fff', fontWeight: '800' }}>
+                        {status ? 'Already applied' : 'Apply now'}
+                      </P>
+                    </Pressable>
+
+                    <Muted numberOfLines={1} style={{ marginTop: tokens.space[2], textAlign: 'center' }}>
+                      {applyUrl}
+                    </Muted>
+                  </Card>
+                );
+              })
+            )
+          ) : null}
         </View>
       </ScrollView>
     </View>
