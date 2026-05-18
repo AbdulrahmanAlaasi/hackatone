@@ -12,7 +12,6 @@ export default async function JudgeAccessPage({
   const { hackathonSlug, token } = await params;
   const svc = createSupabaseServiceClient();
 
-  // Resolve hackathon by slug
   const { data: hackathon } = await svc
     .from('hackathons')
     .select('id, title, score_min, score_max, organizations(name, logo_url)')
@@ -20,7 +19,6 @@ export default async function JudgeAccessPage({
     .maybeSingle();
   if (!hackathon) notFound();
 
-  // Validate judge token (assignment ID)
   const { data: assignment } = await svc
     .from('judge_assignments')
     .select('id, judge_id')
@@ -30,14 +28,21 @@ export default async function JudgeAccessPage({
     .maybeSingle();
   if (!assignment) notFound();
 
-  // Judge profile (for display only)
+  // Find judge number (position in creation order)
+  const { data: allAssignments } = await svc
+    .from('judge_assignments')
+    .select('id')
+    .eq('hackathon_id', hackathon.id)
+    .is('submission_id', null)
+    .order('created_at', { ascending: true });
+  const judgeNumber = (allAssignments ?? []).findIndex((a) => a.id === assignment.id) + 1;
+
   const { data: judgeProfile } = await svc
     .from('profiles')
     .select('full_name, email')
     .eq('id', assignment.judge_id)
     .maybeSingle();
 
-  // All submitted/locked submissions with team info
   const { data: rawSubs } = await svc
     .from('submissions')
     .select('id, title, description, github_url, demo_url, video_url, teams(name)')
@@ -45,14 +50,12 @@ export default async function JudgeAccessPage({
     .in('status', ['submitted', 'locked'])
     .order('created_at', { ascending: true });
 
-  // Judging criteria ordered by sort_order
   const { data: criteria } = await svc
     .from('judging_criteria')
     .select('id, name, description, weight')
     .eq('hackathon_id', hackathon.id)
     .order('sort_order', { ascending: true });
 
-  // Existing scores by this judge
   const { data: existingScores } = await svc
     .from('scores')
     .select('submission_id, criteria_id, score, comment, is_final')
@@ -68,86 +71,135 @@ export default async function JudgeAccessPage({
     demo_url: s.demo_url as string | null,
     video_url: s.video_url as string | null,
     teams: Array.isArray(s.teams) ? (s.teams[0] ?? null) : s.teams,
-  })) as Array<{
-    id: string;
-    title: string;
-    description: string | null;
-    github_url: string | null;
-    demo_url: string | null;
-    video_url: string | null;
-    teams: { name: string } | null;
-  }>;
+  }));
 
   const judgeLabel =
     judgeProfile?.full_name && judgeProfile.full_name !== judgeProfile.email
       ? judgeProfile.full_name
-      : judgeProfile?.email ?? 'Judge';
+      : judgeProfile?.email ?? `Judge ${judgeNumber}`;
 
+  return <JudgeLayout org={org} hackathonTitle={hackathon.title} judgeLabel={judgeLabel} judgeNumber={judgeNumber} assignmentId={assignment.id} submissions={submissions} criteria={criteria ?? []} existingScores={existingScores ?? []} scoreMin={hackathon.score_min ?? 1} scoreMax={hackathon.score_max ?? 5} />;
+}
+
+function JudgeLayout({
+  org, hackathonTitle, judgeLabel, judgeNumber, assignmentId, submissions, criteria, existingScores, scoreMin, scoreMax,
+}: {
+  org: { name: string; logo_url: string | null } | null;
+  hackathonTitle: string;
+  judgeLabel: string;
+  judgeNumber: number;
+  assignmentId: string;
+  submissions: any[];
+  criteria: any[];
+  existingScores: any[];
+  scoreMin: number;
+  scoreMax: number;
+}) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* Sticky header */}
-      <header style={{
-        background: '#fff',
-        borderBottom: '1px solid var(--color-border)',
-        padding: '14px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        gap: 16,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <svg width="30" height="30" viewBox="0 0 512 512" fill="none" aria-hidden>
-            <defs>
-              <linearGradient id="jat-g" x1="120" y1="120" x2="390" y2="395" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#FF9D4D" />
-                <stop offset="1" stopColor="#E96F26" />
-              </linearGradient>
-            </defs>
-            <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="url(#jat-g)" />
-            <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="url(#jat-g)" />
-            <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="url(#jat-g)" strokeWidth="68" strokeLinecap="round" />
-          </svg>
-          <div>
-            {org?.name && (
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--color-primary-pressed)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                {org.name}
-              </div>
-            )}
-            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.2 }}>
-              {hackathon.title}
-            </div>
-          </div>
-        </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>
-            Judging Interface
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>
-            {judgeLabel}
-          </div>
-        </div>
-      </header>
-
-      <main style={{ maxWidth: 860, margin: '0 auto', padding: '32px 20px 80px' }}>
+      <JudgeHeader org={org} hackathonTitle={hackathonTitle} judgeLabel={judgeLabel} judgeNumber={judgeNumber} />
+      <main style={{ maxWidth: 820, margin: '0 auto', padding: '36px 20px 100px' }}>
         {submissions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--color-text-muted)' }}>
-            <p style={{ fontSize: 18, fontWeight: 700 }}>No submissions yet</p>
-            <p style={{ fontSize: 14 }}>Teams haven&apos;t submitted their projects yet. Check back later.</p>
+          <div style={{
+            textAlign: 'center', padding: '100px 0',
+            background: '#fff', borderRadius: 24,
+            boxShadow: '0 2px 24px rgba(43,43,43,0.07)',
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden style={{ margin: '0 auto', display: 'block' }}>
+                <circle cx="24" cy="24" r="22" fill="rgba(255,138,61,0.10)" />
+                <path d="M16 24h16M24 16v16" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+            </div>
+            <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: '0 0 8px' }}>No submissions yet</p>
+            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: 0 }}>
+              Teams haven&apos;t submitted their projects yet. Check back later.
+            </p>
           </div>
         ) : (
           <TokenScorePanel
-            assignmentId={assignment.id}
+            assignmentId={assignmentId}
             submissions={submissions}
-            criteria={criteria ?? []}
-            existingScores={existingScores ?? []}
-            scoreMin={hackathon.score_min ?? 1}
-            scoreMax={hackathon.score_max ?? 5}
+            criteria={criteria}
+            existingScores={existingScores}
+            scoreMin={scoreMin}
+            scoreMax={scoreMax}
           />
         )}
       </main>
     </div>
+  );
+}
+
+function JudgeHeader({
+  org, hackathonTitle, judgeLabel, judgeNumber,
+}: {
+  org: { name: string; logo_url: string | null } | null;
+  hackathonTitle: string;
+  judgeLabel: string;
+  judgeNumber: number;
+}) {
+  return (
+    <header style={{
+      background: '#fff',
+      borderBottom: '1.5px solid var(--color-border)',
+      padding: '0 32px',
+      height: 64,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      gap: 16,
+    }}>
+      {/* Left: logo + hackathon name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: 'linear-gradient(135deg, #FF9D4D 0%, #E96F26 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <svg width="20" height="20" viewBox="0 0 512 512" fill="none" aria-hidden>
+            <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="#fff" />
+            <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="#fff" />
+            <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="#fff" strokeWidth="68" strokeLinecap="round" />
+          </svg>
+        </div>
+        <div>
+          {org?.name && (
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1 }}>
+              {org.name}
+            </div>
+          )}
+          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-text)', lineHeight: org?.name ? 1.3 : 1 }}>
+            {hackathonTitle}
+          </div>
+        </div>
+      </div>
+
+      {/* Right: judge badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', lineHeight: 1 }}>
+            Judging Interface
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', marginTop: 3, lineHeight: 1 }}>
+            {judgeLabel}
+          </div>
+        </div>
+        <div style={{
+          background: 'rgba(255,138,61,0.12)',
+          color: 'var(--color-primary-pressed)',
+          borderRadius: 999,
+          padding: '5px 12px',
+          fontSize: 12,
+          fontWeight: 800,
+          flexShrink: 0,
+        }}>
+          Judge {judgeNumber}
+        </div>
+      </div>
+    </header>
   );
 }
