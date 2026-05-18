@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Dimensions, View } from 'react-native';
+import { Dimensions, Text, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -23,6 +23,7 @@ const MAX_H = 0.58;
 const ARC_MIN = 70;
 const ARC_MAX = 120;
 const BREATH_MS = 2800;
+const DEFAULT_TAGLINE = 'Setting the right TONE for hackathons';
 
 /**
  * Hackatone splash / loading screen.
@@ -103,21 +104,70 @@ export function Splash({ tagline }: { tagline?: string }) {
         >
           Hackatone
         </Animated.Text>
-        <Animated.Text
-          style={[
-            {
-              marginTop: 10,
-              fontSize: 14,
-              fontWeight: '700',
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              color: tokens.color.primaryPressed,
-            },
-            wordmarkStyle,
-          ]}
-        >
-          {tagline ?? 'Hackathons, made warm'}
-        </Animated.Text>
+        {tagline && tagline !== DEFAULT_TAGLINE ? (
+          <Animated.Text
+            style={[
+              {
+                marginTop: 10,
+                fontSize: 15,
+                fontWeight: '700',
+                color: tokens.color.primaryPressed,
+              },
+              wordmarkStyle,
+            ]}
+          >
+            {tagline}
+          </Animated.Text>
+        ) : (
+          <Animated.View
+            style={[
+              {
+                marginTop: 12,
+                maxWidth: SCREEN_W - 48,
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 5,
+              },
+              wordmarkStyle,
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: tokens.color.primaryPressed,
+              }}
+            >
+              Setting the right
+            </Text>
+            <Text
+              style={{
+                overflow: 'hidden',
+                borderRadius: 7,
+                backgroundColor: tokens.color.primary,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                fontSize: 13,
+                fontWeight: '900',
+                letterSpacing: 1.1,
+                color: '#FFFFFF',
+              }}
+            >
+              TONE
+            </Text>
+            <Text
+              style={{
+                fontSize: 15,
+                fontWeight: '700',
+                color: tokens.color.primaryPressed,
+              }}
+            >
+              for hackathons
+            </Text>
+          </Animated.View>
+        )}
       </View>
     </View>
   );
