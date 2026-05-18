@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PUBLIC_WEB_URL } from '@hackatone/shared';
 import { Badge, Button, Card, Field, H1, H2, Input, Muted, P, Screen } from '../../../src/components/ui';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/auth/AuthProvider';
@@ -17,7 +18,8 @@ type Hackathon = {
 };
 
 type Team = { id: string; name: string; join_code: string | null };
-type Member = { user_id: string; role: string; profiles: { full_name: string; email: string } | null };
+type Member = { user_id: string; role: string; full_name: string; email: string };
+type RosterResponse = { ok: boolean; team: Team | null; members: Member[]; error?: string };
 
 export default function TeamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,11 +57,41 @@ export default function TeamScreen() {
     setTeam(myTeam);
 
     if (myTeam) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (accessToken) {
+        const res = await fetch(`${PUBLIC_WEB_URL}/api/mobile/team-roster`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ hackathonId: id }),
+        });
+
+        if (res.ok) {
+          const roster = (await res.json()) as RosterResponse;
+          if (roster.ok) {
+            setTeam(roster.team ?? myTeam);
+            setMembers(roster.members);
+            return;
+          }
+        }
+      }
+
       const { data: mems } = await supabase
         .from('team_members')
-        .select('user_id, role, profiles(full_name, email)')
+        .select('user_id, role')
         .eq('team_id', myTeam.id);
-      setMembers(((mems as any) ?? []) as Member[]);
+      setMembers(
+        (((mems as any) ?? []) as Array<{ user_id: string; role: string }>).map((member) => ({
+          user_id: member.user_id,
+          role: member.role,
+          full_name: member.user_id === user.id ? user.email ?? 'You' : 'Team member',
+          email: member.user_id === user.id ? user.email ?? '' : '',
+        })),
+      );
     } else {
       setMembers([]);
     }
@@ -80,7 +112,7 @@ export default function TeamScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
         <Screen>
-          <Button title="← Back" variant="text" onPress={() => router.back()} />
+          <Button title="<- Back" variant="text" onPress={() => router.back()} />
           <H1>Team</H1>
           <Card>
             <P>You'll see team options once your registration is accepted.</P>
@@ -99,10 +131,10 @@ export default function TeamScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
       <Screen>
         <ScrollView>
-          <Button title="← Back" variant="text" onPress={() => router.back()} />
+          <Button title="<- Back" variant="text" onPress={() => router.back()} />
           <H1>Team</H1>
           <Muted style={{ marginBottom: tokens.space[4] }}>
-            {hackathon.title} · team size {hackathon.min_team_size}–{hackathon.max_team_size}
+            {hackathon.title} - team size {hackathon.min_team_size}-{hackathon.max_team_size}
           </Muted>
 
           {team ? (
@@ -113,6 +145,9 @@ export default function TeamScreen() {
                   Join code: {team.join_code}
                 </Badge>
               ) : null}
+              <Muted style={{ marginTop: tokens.space[2] }}>
+                {members.length} member{members.length === 1 ? '' : 's'}
+              </Muted>
               <View style={{ marginTop: tokens.space[4], gap: tokens.space[2] }}>
                 {members.map((m) => (
                   <View
@@ -126,8 +161,8 @@ export default function TeamScreen() {
                     }}
                   >
                     <View>
-                      <P style={{ fontWeight: '700' }}>{m.profiles?.full_name ?? '—'}</P>
-                      <Muted>{m.profiles?.email ?? ''}</Muted>
+                      <P style={{ fontWeight: '700' }}>{m.full_name}</P>
+                      {m.email ? <Muted>{m.email}</Muted> : null}
                     </View>
                     {m.role === 'lead' ? <Badge tone="primary">Lead</Badge> : null}
                   </View>
