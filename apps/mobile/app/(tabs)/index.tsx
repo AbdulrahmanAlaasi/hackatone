@@ -54,6 +54,13 @@ const TONES: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
   withdrawn: 'neutral',
 };
 
+const SECTION = {
+  width: '100%' as const,
+  maxWidth: 760,
+  alignSelf: 'center' as const,
+  paddingHorizontal: tokens.space[4],
+};
+
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -74,6 +81,17 @@ function organizationName(organizations: PublicHackathon['organizations']) {
 
 function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleDateString() : null;
+}
+
+function initials(value: string) {
+  const letters = value
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+  return letters || 'H';
 }
 
 export default function HomeScreen() {
@@ -153,7 +171,7 @@ export default function HomeScreen() {
         </Hero>
 
         {/* Accepted hackathons */}
-        <View style={{ paddingHorizontal: tokens.space[4], marginTop: -28 }}>
+        <View style={[SECTION, { marginTop: -28 }]}>
           <Card
             tone="surface"
             style={{
@@ -203,7 +221,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Your hackathons list */}
-        <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
+        <View style={[SECTION, { marginTop: tokens.space[6] }]}>
           <H3 style={{ marginBottom: tokens.space[3] }}>Your hackathons</H3>
 
           {rows.length === 0 ? (
@@ -231,30 +249,7 @@ export default function HomeScreen() {
                       gap: tokens.space[3],
                     }}
                   >
-                    {/* Little color swatch */}
-                    <View
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 20,
-                        backgroundColor:
-                          item.status === 'accepted'
-                            ? '#FFE2BD'
-                            : item.status === 'pending'
-                            ? tokens.color.info
-                            : tokens.color.surfaceSoft,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {item.status === 'accepted' ? (
-                        <Icon.Rocket size={26} color={tokens.color.primaryPressed} />
-                      ) : item.status === 'pending' ? (
-                        <Icon.Hourglass size={24} color="#1d3a5b" />
-                      ) : (
-                        <Icon.Mail size={22} color={tokens.color.textMuted} />
-                      )}
-                    </View>
+                    <HackathonMark title={h.title} status={item.status} />
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <P style={{ fontWeight: '800' }} numberOfLines={1}>
                         {h.title}
@@ -272,24 +267,33 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
+        <View style={[SECTION, { marginTop: tokens.space[6] }]}>
           <Pressable
             onPress={() => setPublicExpanded((value) => !value)}
             style={({ pressed }) => [{ opacity: pressed ? 0.86 : 1 }]}
           >
-            <Card tone="cream" style={{ marginBottom: publicExpanded ? tokens.space[3] : 0 }}>
+            <Card
+              tone="surface"
+              style={{
+                marginBottom: publicExpanded ? tokens.space[3] : 0,
+                backgroundColor: '#FFF4E7',
+                borderColor: '#F0C59D',
+                borderWidth: 1,
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: tokens.space[3] }}>
                 <View
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 18,
-                    backgroundColor: '#FFD8B8',
+                    width: 52,
+                    height: 52,
+                    borderRadius: 16,
+                    backgroundColor: tokens.color.primary,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Icon.Rocket size={24} color={tokens.color.primaryPressed} />
+                  <P style={{ color: '#fff', fontSize: 20, fontWeight: '900', lineHeight: 24 }}>{openPublicCount}</P>
+                  <Muted style={{ color: '#fff', fontSize: 9, fontWeight: '900', marginTop: -2 }}>OPEN</Muted>
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <H3>Browse public hackathons</H3>
@@ -306,13 +310,15 @@ export default function HomeScreen() {
                     width: 36,
                     height: 36,
                     borderRadius: 999,
-                    backgroundColor: tokens.color.surface,
+                    backgroundColor: '#fff',
+                    borderWidth: 1,
+                    borderColor: '#F0C59D',
                     alignItems: 'center',
                     justifyContent: 'center',
                     transform: publicExpanded ? [{ rotate: '180deg' }] : [],
                   }}
                 >
-                  <Icon.ChevronDown size={20} color={tokens.color.primaryPressed} />
+                  <Icon.ChevronDown size={20} color={tokens.color.text} />
                 </View>
               </View>
             </Card>
@@ -407,7 +413,11 @@ function DashboardStat({
   value: number;
   tone: 'cream' | 'mint' | 'sky';
 }) {
-  const bg = tone === 'mint' ? '#D8F3E5' : tone === 'sky' ? '#DDEEFF' : '#FFF1DE';
+  const palette = {
+    mint: { bg: '#C9EEDB', border: '#6BBC90', text: '#145C3B' },
+    sky: { bg: '#C7E0F8', border: '#6CA7DA', text: '#174B75' },
+    cream: { bg: '#FFE3BC', border: '#ECA65B', text: '#8A460F' },
+  }[tone];
 
   return (
     <View
@@ -415,13 +425,41 @@ function DashboardStat({
         flex: 1,
         minHeight: 78,
         borderRadius: tokens.radius.md,
-        backgroundColor: bg,
+        backgroundColor: palette.bg,
+        borderWidth: 1,
+        borderColor: palette.border,
         padding: tokens.space[3],
         justifyContent: 'center',
       }}
     >
-      <P style={{ fontSize: 24, fontWeight: '900', lineHeight: 28 }}>{value}</P>
-      <Muted style={{ fontWeight: '800', marginTop: 2 }}>{label}</Muted>
+      <P style={{ fontSize: 24, fontWeight: '900', lineHeight: 28, color: palette.text }}>{value}</P>
+      <Muted style={{ fontWeight: '900', marginTop: 2, color: palette.text }}>{label}</Muted>
+    </View>
+  );
+}
+
+function HackathonMark({ title, status }: { title: string; status: Row['status'] }) {
+  const palette =
+    status === 'accepted'
+      ? { bg: tokens.color.primary, border: tokens.color.primaryPressed, text: '#fff' }
+      : status === 'pending' || status === 'waitlisted'
+      ? { bg: '#C7E0F8', border: '#6CA7DA', text: '#174B75' }
+      : { bg: '#F1ECE5', border: tokens.color.border, text: tokens.color.text };
+
+  return (
+    <View
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: palette.bg,
+        borderWidth: 1,
+        borderColor: palette.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <P style={{ color: palette.text, fontSize: 17, lineHeight: 20, fontWeight: '900' }}>{initials(title)}</P>
     </View>
   );
 }
