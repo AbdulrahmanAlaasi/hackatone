@@ -23,7 +23,7 @@ const MAX_H = 0.58;
 const ARC_MIN = 70;
 const ARC_MAX = 120;
 const BREATH_MS = 2800;
-const DEFAULT_TAGLINE = 'Setting the right TONE for hackathons';
+const DEFAULT_TAGLINE = 'Striking the right TONE for great hackathons';
 
 /**
  * Hackatone splash / loading screen.
@@ -140,7 +140,7 @@ export function Splash({ tagline }: { tagline?: string }) {
                 color: tokens.color.primaryPressed,
               }}
             >
-              Setting the right
+              Striking the right
             </Text>
             <Text
               style={{
@@ -164,7 +164,7 @@ export function Splash({ tagline }: { tagline?: string }) {
                 color: tokens.color.primaryPressed,
               }}
             >
-              for hackathons
+              for great hackathons
             </Text>
           </Animated.View>
         )}

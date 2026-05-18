@@ -372,19 +372,6 @@ export default function HackathonDetailScreen() {
         ) : null}
 
         <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
-          <H3 style={{ marginBottom: tokens.space[2] }}>Schedule details</H3>
-          <Card>
-            <Row label="Starts" value={formatDateTime(hackathon.starts_at)} />
-            <Row label="Ends" value={formatDateTime(hackathon.ends_at)} />
-            <Row
-              label="Submission deadline"
-              value={formatDateTime(hackathon.submission_deadline)}
-              last
-            />
-          </Card>
-        </View>
-
-        <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
           <H3 style={{ marginBottom: tokens.space[2] }}>Latest announcements</H3>
           {announcements.length === 0 ? (
             <Card tone="soft">
