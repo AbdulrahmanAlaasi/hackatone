@@ -49,9 +49,9 @@ export default async function JudgesPage({ params }: { params: Promise<{ id: str
             </Tr>
           </Thead>
           <Tbody>
-            {assignments!.map((a: any) => {
+            {assignments!.map((a: any, idx: number) => {
               const link = hackathon?.slug
-                ? `${siteUrl}/${hackathon.slug}/judge/${a.id}`
+                ? `${siteUrl}/${hackathon.slug}/judge${idx + 1}`
                 : null;
               return (
                 <Tr key={a.id}>

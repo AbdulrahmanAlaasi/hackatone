@@ -135,7 +135,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: assignErr.message }, { status: 500 });
     }
 
-    const accessLink = `${siteUrl}/${hackathon.slug}/judge/${assignment.id}`;
+    // Count position among all assignments for this hackathon (1-based, sorted by created_at)
+    const { data: allAssignments } = await svc
+      .from('judge_assignments')
+      .select('id')
+      .eq('hackathon_id', hackathonId)
+      .is('submission_id', null)
+      .order('created_at', { ascending: true });
+
+    const position = (allAssignments ?? []).findIndex((a) => a.id === assignment.id) + 1;
+    const accessLink = `${siteUrl}/${hackathon.slug}/judge${position > 0 ? position : (allAssignments?.length ?? 1)}`;
     return NextResponse.json({ ok: true, link: accessLink });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
