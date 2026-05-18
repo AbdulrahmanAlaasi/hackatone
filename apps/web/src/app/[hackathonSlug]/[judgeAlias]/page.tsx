@@ -11,10 +11,9 @@ export default async function JudgeAliasPage({
 }) {
   const { hackathonSlug, judgeAlias } = await params;
 
-  // Validate format: judge1, judge2, ...
   const match = /^judge(\d+)$/i.exec(judgeAlias);
   if (!match) notFound();
-  const judgeN = parseInt(match[1]!, 10); // 1-based
+  const judgeN = parseInt(match[1]!, 10);
   if (judgeN < 1) notFound();
 
   const svc = createSupabaseServiceClient();
@@ -26,7 +25,6 @@ export default async function JudgeAliasPage({
     .maybeSingle();
   if (!hackathon) notFound();
 
-  // Fetch all assignments for this hackathon ordered by creation time, pick the Nth one
   const { data: assignments } = await svc
     .from('judge_assignments')
     .select('id, judge_id')
@@ -80,10 +78,12 @@ export default async function JudgeAliasPage({
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+      {/* Header */}
       <header style={{
         background: '#fff',
-        borderBottom: '1px solid var(--color-border)',
-        padding: '14px 24px',
+        borderBottom: '1.5px solid var(--color-border)',
+        padding: '0 32px',
+        height: 64,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -92,44 +92,63 @@ export default async function JudgeAliasPage({
         zIndex: 100,
         gap: 16,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <svg width="30" height="30" viewBox="0 0 512 512" fill="none" aria-hidden>
-            <defs>
-              <linearGradient id="jal-g" x1="120" y1="120" x2="390" y2="395" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#FF9D4D" />
-                <stop offset="1" stopColor="#E96F26" />
-              </linearGradient>
-            </defs>
-            <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="url(#jal-g)" />
-            <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="url(#jal-g)" />
-            <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="url(#jal-g)" strokeWidth="68" strokeLinecap="round" />
-          </svg>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'linear-gradient(135deg, #FF9D4D 0%, #E96F26 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <svg width="20" height="20" viewBox="0 0 512 512" fill="none" aria-hidden>
+              <path d="M142 172C142 147.147 162.147 127 187 127C211.853 127 232 147.147 232 172V337C232 361.853 211.853 382 187 382C162.147 382 142 361.853 142 337V172Z" fill="#fff" />
+              <path d="M280 172C280 147.147 300.147 127 325 127C349.853 127 370 147.147 370 172V337C370 361.853 349.853 382 325 382C300.147 382 280 361.853 280 337V172Z" fill="#fff" />
+              <path d="M187 170C211 190 232 214 256 239C280 264 301 287 325 307" stroke="#fff" strokeWidth="68" strokeLinecap="round" />
+            </svg>
+          </div>
           <div>
             {org?.name && (
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--color-primary-pressed)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: 1 }}>
                 {org.name}
               </div>
             )}
-            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.2 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-text)', lineHeight: org?.name ? 1.3 : 1 }}>
               {hackathon.title}
             </div>
           </div>
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)' }}>
-            Judging Interface
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', lineHeight: 1 }}>
+              Judging Interface
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', marginTop: 3, lineHeight: 1 }}>
+              {judgeLabel}
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>
-            {judgeLabel}
+          <div style={{
+            background: 'rgba(255,138,61,0.12)',
+            color: 'var(--color-primary-pressed)',
+            borderRadius: 999,
+            padding: '5px 12px',
+            fontSize: 12,
+            fontWeight: 800,
+          }}>
+            Judge {judgeN}
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: 860, margin: '0 auto', padding: '32px 20px 80px' }}>
+      <main style={{ maxWidth: 820, margin: '0 auto', padding: '36px 20px 100px' }}>
         {submissions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--color-text-muted)' }}>
-            <p style={{ fontSize: 18, fontWeight: 700 }}>No submissions yet</p>
-            <p style={{ fontSize: 14 }}>Teams haven&apos;t submitted their projects yet. Check back later.</p>
+          <div style={{
+            textAlign: 'center', padding: '100px 0',
+            background: '#fff', borderRadius: 24,
+            boxShadow: '0 2px 24px rgba(43,43,43,0.07)',
+          }}>
+            <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: '0 0 8px' }}>No submissions yet</p>
+            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: 0 }}>
+              Teams haven&apos;t submitted their projects yet. Check back later.
+            </p>
           </div>
         ) : (
           <TokenScorePanel
