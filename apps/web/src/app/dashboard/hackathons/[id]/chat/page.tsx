@@ -1,5 +1,6 @@
 import { Card, Icon } from '@/components/ui';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
+import { ensureGeneralChatChannel } from '@/lib/chatChannels';
 import { ChatPanel } from './ChatPanel';
 
 export default async function ChatPage({
@@ -9,6 +10,16 @@ export default async function ChatPage({
 }) {
   const { id } = await params;
   const { supabase, user } = await getCurrentUserOrRedirect();
+
+  const { data: hackathon } = await supabase
+    .from('hackathons')
+    .select('chat_enabled')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (hackathon?.chat_enabled) {
+    await ensureGeneralChatChannel(supabase, id);
+  }
 
   // Load channels for this hackathon (organizer can see all)
   const { data: channels } = await supabase

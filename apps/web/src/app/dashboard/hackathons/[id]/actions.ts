@@ -2,11 +2,16 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
+import { ensureGeneralChatChannel } from '@/lib/chatChannels';
 
 export async function updateHackathon(id: string, patch: Record<string, unknown>) {
   const { supabase } = await getCurrentUserOrRedirect();
   const { error } = await supabase.from('hackathons').update(patch).eq('id', id);
   if (error) return { ok: false as const, error: error.message };
+  if (patch.chat_enabled === true) {
+    const channelError = await ensureGeneralChatChannel(supabase, id);
+    if (channelError) return { ok: false as const, error: channelError.message };
+  }
   revalidatePath(`/dashboard/hackathons/${id}`);
   return { ok: true as const };
 }

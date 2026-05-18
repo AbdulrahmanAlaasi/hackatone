@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, Button, Card, H1, H2, Muted, P, Screen } from '../../../src/components/ui';
+import { Button, Card, H1, Muted, P, Screen } from '../../../src/components/ui';
 import { supabase } from '../../../src/lib/supabase';
 import { useAuth } from '../../../src/auth/AuthProvider';
 import { tokens } from '../../../src/theme';
@@ -15,13 +15,21 @@ type Message = {
   profiles?: { full_name: string | null } | null;
 };
 
-type Channel = { id: string; name: string; scope: 'team' | 'hackathon' };
+type Channel = { id: string; name: string; scope: 'team' | 'hackathon'; team_id: string | null };
 
 function normalizeMessages(rows: any[] | null): Message[] {
   return (rows ?? []).map((row) => ({
     ...row,
     profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : (row.profiles ?? null),
   }));
+}
+
+function channelLabel(channel: Channel) {
+  return channel.scope === 'hackathon' ? 'General' : channel.name;
+}
+
+function channelDescription(channel: Channel) {
+  return channel.scope === 'hackathon' ? 'Everyone in this hackathon' : 'Your team only';
 }
 
 export default function ChatScreen() {
@@ -66,20 +74,24 @@ export default function ChatScreen() {
         ? await query.or(orFilters.join(','))
         : await query.eq('scope', 'team').eq('team_id', teamId ?? '00000000-0000-0000-0000-000000000000');
 
-      // Dedupe: at most one channel per (scope, team_id) — guards against any
+      // Dedupe: at most one channel per (scope, team_id), guarding against any
       // stale dupes from before migration 0009 was applied.
-      const rawList = (data ?? []) as Array<Channel & { team_id: string | null }>;
+      const rawList = (data ?? []) as Channel[];
       const seen = new Set<string>();
       const list: Channel[] = [];
       for (const c of rawList) {
         const key = `${c.scope}:${c.team_id ?? 'all'}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        list.push({ id: c.id, name: c.name, scope: c.scope });
+        list.push({ id: c.id, name: c.name, scope: c.scope, team_id: c.team_id });
       }
+      list.sort((a, b) => {
+        if (a.scope !== b.scope) return a.scope === 'hackathon' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
       setChannels(list);
-      const first = list[0];
-      if (first && !activeId) setActiveId(first.id);
+      const preferred = list.find((c) => c.scope === 'hackathon') ?? list[0];
+      if (preferred && !activeId) setActiveId(preferred.id);
     })();
   }, [id, user]);
 
@@ -146,23 +158,48 @@ export default function ChatScreen() {
             </Card>
           ) : (
             <>
-              <View style={{ flexDirection: 'row', gap: tokens.space[2], marginBottom: tokens.space[3] }}>
+              <View style={{ gap: tokens.space[2], marginBottom: tokens.space[4] }}>
                 {channels.map((c) => (
-                  <Badge
+                  <Pressable
                     key={c.id}
-                    tone={activeId === c.id ? 'primary' : 'neutral'}
+                    onPress={() => setActiveId(c.id)}
+                    style={({ pressed }) => [
+                      {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: tokens.space[3],
+                        paddingHorizontal: tokens.space[4],
+                        paddingVertical: tokens.space[3],
+                        borderRadius: tokens.radius.lg,
+                        borderWidth: 1,
+                        borderColor: activeId === c.id ? tokens.color.primary : tokens.color.border,
+                        backgroundColor: activeId === c.id ? '#FFF1DE' : tokens.color.surface,
+                        transform: pressed ? [{ scale: 0.99 }] : [],
+                      },
+                    ]}
                   >
-                    <P
-                      onPress={() => setActiveId(c.id)}
+                    <View
                       style={{
-                        color: activeId === c.id ? '#fff' : tokens.color.text,
-                        fontWeight: '800',
+                        width: 12,
+                        height: 12,
+                        borderRadius: 999,
+                        backgroundColor: c.scope === 'hackathon' ? tokens.color.success : tokens.color.primary,
+                      }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <P style={{ fontWeight: '900', lineHeight: 20 }}>{channelLabel(c)}</P>
+                      <Muted>{channelDescription(c)}</Muted>
+                    </View>
+                    <P
+                      style={{
+                        color: activeId === c.id ? tokens.color.primaryPressed : tokens.color.textMuted,
+                        fontWeight: '900',
                         fontSize: tokens.font.size.caption,
                       }}
                     >
-                      {c.scope === 'team' ? `Team: ${c.name}` : c.name}
+                      {activeId === c.id ? 'Open' : ''}
                     </P>
-                  </Badge>
+                  </Pressable>
                 ))}
               </View>
 
@@ -197,7 +234,7 @@ export default function ChatScreen() {
                     </View>
                   );
                 }}
-                ListEmptyComponent={<Muted>No messages yet — say hi 👋</Muted>}
+                ListEmptyComponent={<Muted>No messages yet. Say hi to start the chat.</Muted>}
               />
 
               <View style={{ flexDirection: 'row', gap: tokens.space[2], paddingTop: tokens.space[2] }}>

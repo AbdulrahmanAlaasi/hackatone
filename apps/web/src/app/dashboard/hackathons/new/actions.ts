@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getCurrentUserOrRedirect } from '@/lib/auth';
+import { ensureGeneralChatChannel } from '@/lib/chatChannels';
 import { DEFAULT_JUDGING_CRITERIA } from '@hackatone/shared';
 
 interface CreateInput {
@@ -45,6 +46,7 @@ export async function createHackathon(input: CreateInput) {
     sort_order: i + 1,
   }));
   await supabase.from('judging_criteria').insert(criteria);
+  await ensureGeneralChatChannel(supabase, hackathon.id);
 
   revalidatePath('/dashboard/hackathons');
   return { ok: true as const, id: hackathon.id };
