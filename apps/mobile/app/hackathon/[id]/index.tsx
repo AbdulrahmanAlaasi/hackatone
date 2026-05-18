@@ -32,6 +32,12 @@ type Track = {
   description: string | null;
 };
 
+type AgendaItem = {
+  label: string;
+  value: string;
+  at: Date | null;
+};
+
 function openInMaps(query: string) {
   const q = encodeURIComponent(query);
   const url = Platform.select({
@@ -40,6 +46,35 @@ function openInMaps(query: string) {
     default: `https://www.google.com/maps/search/?api=1&query=${q}`,
   });
   if (url) Linking.openURL(url);
+}
+
+function formatDateTime(value: string | null) {
+  return value ? new Date(value).toLocaleString() : 'TBA';
+}
+
+function buildAgenda(hackathon: any): AgendaItem[] {
+  return [
+    { label: 'Registration closes', value: formatDateTime(hackathon.registration_deadline), at: hackathon.registration_deadline ? new Date(hackathon.registration_deadline) : null },
+    { label: 'Hackathon starts', value: formatDateTime(hackathon.starts_at), at: hackathon.starts_at ? new Date(hackathon.starts_at) : null },
+    { label: 'Submission deadline', value: formatDateTime(hackathon.submission_deadline), at: hackathon.submission_deadline ? new Date(hackathon.submission_deadline) : null },
+    { label: 'Hackathon ends', value: formatDateTime(hackathon.ends_at), at: hackathon.ends_at ? new Date(hackathon.ends_at) : null },
+  ];
+}
+
+function countdownText(target: Date | null) {
+  if (!target) return 'Date TBA';
+  const diff = target.getTime() - Date.now();
+  if (diff <= 0) return 'Now';
+  const minutes = Math.ceil(diff / 60000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  return `${minutes}m`;
+}
+
+function nextAgendaItem(items: AgendaItem[]) {
+  return items.find((item) => item.at && item.at.getTime() > Date.now()) ?? null;
 }
 
 export default function HackathonDetailScreen() {
@@ -102,6 +137,8 @@ export default function HackathonDetailScreen() {
   const accepted = registration?.status === 'accepted';
   const startsAt = hackathon.starts_at ? new Date(hackathon.starts_at).toLocaleDateString() : 'TBA';
   const deadline = hackathon.submission_deadline ? new Date(hackathon.submission_deadline).toLocaleDateString() : 'TBA';
+  const agenda = buildAgenda(hackathon);
+  const nextUp = nextAgendaItem(agenda);
 
   return (
     <View style={{ flex: 1, backgroundColor: tokens.color.background }}>
@@ -154,6 +191,10 @@ export default function HackathonDetailScreen() {
           <Card tone="surface" style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } }}>
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
               <EventStat label="Status" value={registration?.status ?? hackathon.status ?? 'open'} />
+              <EventStat label="Next up" value={nextUp?.label ?? 'Schedule clear'} />
+              <EventStat label="Countdown" value={countdownText(nextUp?.at ?? null)} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: tokens.space[3], marginTop: tokens.space[3] }}>
               <EventStat label="Starts" value={startsAt} />
               <EventStat label="Submit by" value={deadline} />
             </View>
@@ -205,14 +246,32 @@ export default function HackathonDetailScreen() {
               />
             </View>
             <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
-              <ActionTile
-                Icon={Icon.Trophy}
-                title="Results"
-                subtitle="Leaderboard"
-                tone="cream"
-                onPress={() => router.push(`/hackathon/${hackathon.id}/results`)}
-              />
-              {hackathon.location ? (
+              {hackathon.public_gallery_enabled ? (
+                <ActionTile
+                  Icon={Icon.Image}
+                  title="Gallery"
+                  subtitle="Public projects"
+                  tone="cream"
+                  onPress={() => router.push(`/hackathon/${hackathon.id}/gallery`)}
+                />
+              ) : (
+                <ActionTile
+                  Icon={Icon.Trophy}
+                  title="Results"
+                  subtitle="Leaderboard"
+                  tone="cream"
+                  onPress={() => router.push(`/hackathon/${hackathon.id}/results`)}
+                />
+              )}
+              {hackathon.public_gallery_enabled ? (
+                <ActionTile
+                  Icon={Icon.Trophy}
+                  title="Results"
+                  subtitle="Leaderboard"
+                  tone="plain"
+                  onPress={() => router.push(`/hackathon/${hackathon.id}/results`)}
+                />
+              ) : hackathon.location ? (
                 <ActionTile
                   Icon={Icon.Map}
                   title="Directions"
@@ -224,6 +283,17 @@ export default function HackathonDetailScreen() {
                 <View style={{ flex: 1 }} />
               )}
             </View>
+            {hackathon.public_gallery_enabled && hackathon.location ? (
+              <View style={{ marginTop: tokens.space[3] }}>
+                <ActionTile
+                  Icon={Icon.Map}
+                  title="Directions"
+                  subtitle="Open in Maps"
+                  tone="plain"
+                  onPress={() => openInMaps(hackathon.location)}
+                />
+              </View>
+            ) : null}
           </View>
         ) : registration?.status === 'pending' ? (
           <View style={{ paddingHorizontal: tokens.space[4] }}>
@@ -246,6 +316,45 @@ export default function HackathonDetailScreen() {
           </View>
         ) : null}
 
+        <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
+          <H3 style={{ marginBottom: tokens.space[2] }}>Event agenda</H3>
+          <View style={{ gap: tokens.space[3] }}>
+            {agenda.map((item, index) => (
+              <AgendaRow key={item.label} item={item} index={index} />
+            ))}
+          </View>
+        </View>
+
+        <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
+          <H3 style={{ marginBottom: tokens.space[2] }}>Location</H3>
+          <Card>
+            <Muted style={{ fontWeight: '800' }}>Venue</Muted>
+            <P style={{ marginTop: 4, fontWeight: '800' }}>{hackathon.location ?? 'Location TBA'}</P>
+            <P style={{ color: tokens.color.textMuted, marginTop: tokens.space[3] }}>
+              {accepted
+                ? 'Bring your QR pass for check-in. Organizers can share room, entrance, and Wi-Fi details in announcements.'
+                : 'Once accepted, keep an eye on announcements for check-in and venue notes.'}
+            </P>
+            {hackathon.location ? (
+              <Pressable
+                onPress={() => openInMaps(hackathon.location)}
+                style={({ pressed }) => [
+                  {
+                    marginTop: tokens.space[4],
+                    borderRadius: tokens.radius.full,
+                    paddingVertical: 13,
+                    alignItems: 'center',
+                    backgroundColor: tokens.color.primary,
+                    transform: pressed ? [{ scale: 0.98 }] : [],
+                  },
+                ]}
+              >
+                <P style={{ color: '#fff', fontWeight: '800' }}>Open directions</P>
+              </Pressable>
+            ) : null}
+          </Card>
+        </View>
+
         {tracks.length > 0 ? (
           <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
             <H3 style={{ marginBottom: tokens.space[2] }}>Tracks</H3>
@@ -263,17 +372,13 @@ export default function HackathonDetailScreen() {
         ) : null}
 
         <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
-          <H3 style={{ marginBottom: tokens.space[2] }}>Schedule</H3>
+          <H3 style={{ marginBottom: tokens.space[2] }}>Schedule details</H3>
           <Card>
-            <Row label="Starts" value={hackathon.starts_at ? new Date(hackathon.starts_at).toLocaleString() : 'TBA'} />
-            <Row label="Ends" value={hackathon.ends_at ? new Date(hackathon.ends_at).toLocaleString() : 'TBA'} />
+            <Row label="Starts" value={formatDateTime(hackathon.starts_at)} />
+            <Row label="Ends" value={formatDateTime(hackathon.ends_at)} />
             <Row
               label="Submission deadline"
-              value={
-                hackathon.submission_deadline
-                  ? new Date(hackathon.submission_deadline).toLocaleString()
-                  : 'TBA'
-              }
+              value={formatDateTime(hackathon.submission_deadline)}
               last
             />
           </Card>
@@ -297,6 +402,31 @@ export default function HackathonDetailScreen() {
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+function AgendaRow({ item, index }: { item: AgendaItem; index: number }) {
+  const done = item.at ? item.at.getTime() < Date.now() : false;
+  return (
+    <Card tone={done ? 'soft' : index === 0 ? 'cream' : 'surface'} style={{ flexDirection: 'row', gap: tokens.space[3], alignItems: 'center' }}>
+      <View
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 16,
+          backgroundColor: done ? tokens.color.surface : tokens.color.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <P style={{ color: done ? tokens.color.textMuted : '#fff', fontWeight: '900' }}>{index + 1}</P>
+      </View>
+      <View style={{ flex: 1 }}>
+        <P style={{ fontWeight: '800' }}>{item.label}</P>
+        <Muted style={{ marginTop: 2 }}>{item.value}</Muted>
+      </View>
+      <Badge tone={done ? 'neutral' : 'info'}>{done ? 'done' : countdownText(item.at)}</Badge>
+    </Card>
   );
 }
 

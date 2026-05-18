@@ -66,6 +66,13 @@ export const Icon = {
       <Path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z" />
     </Svg>
   ),
+  Image: (p: Props) => (
+    <Svg {...defaults(p)}>
+      <Rect width="18" height="18" x="3" y="3" rx="2" />
+      <Circle cx="9" cy="9" r="2" />
+      <Path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
+    </Svg>
+  ),
   Pin: (p: Props) => (
     <Svg {...defaults(p)}>
       <Path d="M20 10c0 7-8 12-8 12s-8-5-8-12a8 8 0 0 1 16 0Z" />
