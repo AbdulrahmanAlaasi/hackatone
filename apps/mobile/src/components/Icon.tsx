@@ -96,6 +96,13 @@ export const Icon = {
       <Path d="m22 7-10 5L2 7" />
     </Svg>
   ),
+  Sparkles: (p: Props) => (
+    <Svg {...defaults(p)}>
+      <Path d="m12 3 1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8Z" />
+      <Path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9Z" />
+      <Path d="m5 14 .9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9Z" />
+    </Svg>
+  ),
   ArrowLeft: (p: Props) => (
     <Svg {...defaults(p)}>
       <Path d="m12 19-7-7 7-7M19 12H5" />

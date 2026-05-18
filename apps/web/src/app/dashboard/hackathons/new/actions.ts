@@ -27,7 +27,11 @@ export async function createHackathon(input: CreateInput) {
 
   const { data: hackathon, error } = await supabase
     .from('hackathons')
-    .insert({ ...input, status: 'draft', created_by: user.id })
+    .insert({
+      ...input,
+      status: input.visibility === 'public' ? 'registration_open' : 'draft',
+      created_by: user.id,
+    })
     .select('id')
     .single();
 

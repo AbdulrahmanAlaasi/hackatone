@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
+import type { ReactNode } from 'react';
 import { Icon } from '../../src/components/Icon';
 import { tokens } from '../../src/theme';
 
@@ -8,7 +9,7 @@ function TabIcon({
   label,
   focused,
 }: {
-  icon: (p: { size?: number; color?: string }) => JSX.Element;
+  icon: (p: { size?: number; color?: string }) => ReactNode;
   label: string;
   focused: boolean;
 }) {

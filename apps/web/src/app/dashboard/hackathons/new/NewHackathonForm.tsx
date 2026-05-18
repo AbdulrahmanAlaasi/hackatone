@@ -132,7 +132,7 @@ export function NewHackathonForm({ organizationId }: { organizationId: string })
             <option value="true">Allowed</option>
           </Select>
         </Field>
-        <Field label="Visibility" htmlFor="vis" hint="Public hackathons show up in the participant app browse list.">
+        <Field label="Visibility" htmlFor="vis" hint="Public hackathons show up in the participant app and open registration immediately.">
           <Select id="vis" value={visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}>
             <option value="private">Private (QR/link only)</option>
             <option value="public">Public (listed in app)</option>

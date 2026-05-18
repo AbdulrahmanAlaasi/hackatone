@@ -26,6 +26,12 @@ const TONES: Record<string, 'success' | 'info' | 'warning' | 'neutral'> = {
   withdrawn: 'neutral',
 };
 
+type Track = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+
 function openInMaps(query: string) {
   const q = encodeURIComponent(query);
   const url = Platform.select({
@@ -44,10 +50,11 @@ export default function HackathonDetailScreen() {
   const [organization, setOrganization] = useState<{ name: string; logo_url: string | null } | null>(null);
   const [registration, setRegistration] = useState<any>(null);
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
 
   const load = useCallback(async () => {
     if (!id || !user) return;
-    const [h, r, a] = await Promise.all([
+    const [h, r, a, t] = await Promise.all([
       supabase
         .from('hackathons')
         .select('*, organizations(name, logo_url)')
@@ -66,11 +73,17 @@ export default function HackathonDetailScreen() {
         .eq('hidden', false)
         .order('created_at', { ascending: false })
         .limit(3),
+      supabase
+        .from('hackathon_tracks')
+        .select('id, name, description')
+        .eq('hackathon_id', id)
+        .order('created_at', { ascending: true }),
     ]);
     setHackathon(h.data);
     setOrganization((h.data?.organizations as any) ?? null);
     setRegistration(r.data);
     setAnnouncements((a.data as any[]) ?? []);
+    setTracks((t.data as Track[]) ?? []);
   }, [id, user]);
 
   useEffect(() => { load(); }, [load]);
@@ -80,13 +93,15 @@ export default function HackathonDetailScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: tokens.color.background }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Muted>Loading…</Muted>
+          <Muted>Loading...</Muted>
         </View>
       </SafeAreaView>
     );
   }
 
   const accepted = registration?.status === 'accepted';
+  const startsAt = hackathon.starts_at ? new Date(hackathon.starts_at).toLocaleDateString() : 'TBA';
+  const deadline = hackathon.submission_deadline ? new Date(hackathon.submission_deadline).toLocaleDateString() : 'TBA';
 
   return (
     <View style={{ flex: 1, backgroundColor: tokens.color.background }}>
@@ -135,8 +150,25 @@ export default function HackathonDetailScreen() {
           </SafeAreaView>
         </Hero>
 
+        <View style={{ paddingHorizontal: tokens.space[4], marginTop: -28 }}>
+          <Card tone="surface" style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 18, shadowOffset: { width: 0, height: 6 } }}>
+            <View style={{ flexDirection: 'row', gap: tokens.space[3] }}>
+              <EventStat label="Status" value={registration?.status ?? hackathon.status ?? 'open'} />
+              <EventStat label="Starts" value={startsAt} />
+              <EventStat label="Submit by" value={deadline} />
+            </View>
+            {registration?.checked_in_at ? (
+              <Badge tone="success" style={{ marginTop: tokens.space[3] }}>Checked in</Badge>
+            ) : registration?.status === 'accepted' ? (
+              <P style={{ color: tokens.color.textMuted, marginTop: tokens.space[3] }}>
+                You are accepted. Keep your QR ready for check-in.
+              </P>
+            ) : null}
+          </Card>
+        </View>
+
         {accepted ? (
-          <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[2] }}>
+          <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
             <H3 style={{ marginTop: tokens.space[4], marginBottom: tokens.space[3] }}>
               Quick actions
             </H3>
@@ -214,6 +246,22 @@ export default function HackathonDetailScreen() {
           </View>
         ) : null}
 
+        {tracks.length > 0 ? (
+          <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
+            <H3 style={{ marginBottom: tokens.space[2] }}>Tracks</H3>
+            <View style={{ gap: tokens.space[3] }}>
+              {tracks.map((track) => (
+                <Card key={track.id} tone="soft">
+                  <P style={{ fontWeight: '800' }}>{track.name}</P>
+                  {track.description ? (
+                    <P style={{ color: tokens.color.textMuted, marginTop: tokens.space[2] }}>{track.description}</P>
+                  ) : null}
+                </Card>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
         <View style={{ paddingHorizontal: tokens.space[4], marginTop: tokens.space[6] }}>
           <H3 style={{ marginBottom: tokens.space[2] }}>Schedule</H3>
           <Card>
@@ -265,6 +313,24 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
     >
       <Muted style={{ fontWeight: '700' }}>{label}</Muted>
       <P style={{ textAlign: 'right', flexShrink: 1, marginLeft: tokens.space[3] }}>{value}</P>
+    </View>
+  );
+}
+
+function EventStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        minHeight: 74,
+        borderRadius: tokens.radius.md,
+        backgroundColor: tokens.color.surfaceSoft,
+        padding: tokens.space[3],
+        justifyContent: 'center',
+      }}
+    >
+      <Muted style={{ fontWeight: '800' }}>{label}</Muted>
+      <P style={{ fontWeight: '900', marginTop: 4 }} numberOfLines={2}>{value}</P>
     </View>
   );
 }

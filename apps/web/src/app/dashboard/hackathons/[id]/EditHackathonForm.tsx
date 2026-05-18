@@ -44,6 +44,15 @@ export function EditHackathonForm({ hackathon }: { hackathon: any }) {
     setSaved(false);
   }
 
+  function setVisibility(v: 'public' | 'private') {
+    setForm((s) => ({
+      ...s,
+      visibility: v,
+      status: v === 'public' && s.status === 'draft' ? 'registration_open' : s.status,
+    }));
+    setSaved(false);
+  }
+
   return (
     <form
       onSubmit={(e) => {
@@ -139,8 +148,8 @@ export function EditHackathonForm({ hackathon }: { hackathon: any }) {
             <option value="true">Public</option>
           </Select>
         </Field>
-        <Field label="Visibility" htmlFor="vis2" hint="Public = listed in the participant app browse.">
-          <Select id="vis2" value={form.visibility} onChange={(e) => set('visibility', e.target.value as 'public' | 'private')}>
+        <Field label="Visibility" htmlFor="vis2" hint="Public = listed in the participant app and open for registration.">
+          <Select id="vis2" value={form.visibility} onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}>
             <option value="private">Private (QR/link only)</option>
             <option value="public">Public (listed)</option>
           </Select>
