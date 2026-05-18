@@ -3,7 +3,6 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input, SearchBar } from '@/components/ui';
-import { checkInById, checkInByToken, undoCheckIn } from '../participants/actions';
 
 type Accepted = {
   id: string;
@@ -26,14 +25,21 @@ export function TokenForm({ hackathonId }: { hackathonId: string }) {
         setMsg(null);
         start(() => {
           void (async () => {
-            const res = await checkInByToken(hackathonId, token);
+            const res = await fetch('/api/participants/checkin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ hackathonId, token }),
+            }).then((r) => r.json());
+
             if (!res.ok) {
               setMsg({ kind: 'err', text: res.error });
               return;
             }
             setMsg({
               kind: 'ok',
-              text: res.alreadyCheckedIn ? `${res.name} was already checked in.` : `Checked in ${res.name}.`,
+              text: res.alreadyCheckedIn
+                ? `${res.name} was already checked in.`
+                : `Checked in ${res.name}.`,
             });
             setToken('');
             router.refresh();
@@ -91,11 +97,15 @@ export function ManualList({ hackathonId, accepted }: { hackathonId: string; acc
       .slice(0, 50);
   }, [accepted, q]);
 
-  function act(fn: () => Promise<unknown>, id: string) {
-    setPendingId(id);
+  function act(registrationId: string, undo: boolean) {
+    setPendingId(registrationId);
     start(() => {
       void (async () => {
-        await fn();
+        await fetch('/api/participants/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hackathonId, registrationId, undo }),
+        });
         setPendingId(null);
         router.refresh();
       })();
@@ -135,7 +145,7 @@ export function ManualList({ hackathonId, accepted }: { hackathonId: string; acc
                   <Button
                     variant="text"
                     loading={pendingId === r.id}
-                    onClick={() => act(() => undoCheckIn(hackathonId, r.id), r.id)}
+                    onClick={() => act(r.id, true)}
                   >
                     Undo
                   </Button>
@@ -144,7 +154,7 @@ export function ManualList({ hackathonId, accepted }: { hackathonId: string; acc
                 <Button
                   variant="secondary"
                   loading={pendingId === r.id}
-                  onClick={() => act(() => checkInById(hackathonId, r.id), r.id)}
+                  onClick={() => act(r.id, false)}
                 >
                   Check in
                 </Button>
